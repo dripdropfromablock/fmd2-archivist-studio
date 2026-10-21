@@ -1,0 +1,6 @@
+{
+  "name": "FMD2 Studio — Multi-Source Manga Downloader & Reader",
+  "description": "A clean, minimalist web GUI for Free Manga Downloader (FMD2) featuring multi-source title search, direct link parsing, batch chapter queue management, and a distraction-free manga reader.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

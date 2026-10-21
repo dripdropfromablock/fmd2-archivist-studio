@@ -1,0 +1,751 @@
+@import "tailwindcss";
+
+@layer base {
+  :root,
+  [data-theme="obsidian"] {
+    --font-display: 'SF Pro Display', 'SF Pro', -apple-system, BlinkMacSystemFont, 'Plus Jakarta Sans', sans-serif;
+    --font-sans: 'SF Pro Text', 'SF Pro', -apple-system, BlinkMacSystemFont, 'DM Sans', sans-serif;
+    --font-mono: 'SF Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, 'JetBrains Mono', monospace;
+
+    --theme-bg-canvas: #090C12;
+    --theme-bg-surface: #0E131D;
+    --theme-bg-elevated: #151C2A;
+    --theme-border: #1E2738;
+    --theme-border-subtle: rgba(30, 39, 56, 0.85);
+    --theme-text-primary: #F8FAFC;
+    --theme-text-secondary: #94A3B8;
+    --theme-text-muted: #64748B;
+    --theme-accent: #6366F1;
+    --theme-accent-hover: #818CF8;
+    --theme-accent-soft: #A5B4FC;
+    --theme-accent-glow: rgba(99, 102, 241, 0.14);
+    --theme-accent-surface: rgba(99, 102, 241, 0.14);
+  }
+
+  /* Apple Developer Font Pairings (https://developer.apple.com/fonts/) */
+  [data-font="sf-pro"] {
+    --font-display: 'SF Pro Display', 'SF Pro', -apple-system, BlinkMacSystemFont, 'Plus Jakarta Sans', sans-serif;
+    --font-sans: 'SF Pro Text', 'SF Pro', -apple-system, BlinkMacSystemFont, 'DM Sans', sans-serif;
+    --font-mono: 'SF Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, 'JetBrains Mono', monospace;
+  }
+
+  [data-font="new-york"] {
+    --font-display: 'New York', ui-serif, 'Fraunces', Georgia, serif;
+    --font-sans: 'SF Pro Text', 'SF Pro', -apple-system, BlinkMacSystemFont, 'DM Sans', sans-serif;
+    --font-mono: 'SF Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, 'JetBrains Mono', monospace;
+  }
+
+  [data-font="sf-compact"] {
+    --font-display: 'SF Compact Display', 'SF Compact', 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Outfit', sans-serif;
+    --font-sans: 'SF Compact Text', 'SF Compact', 'SF Pro Text', -apple-system, BlinkMacSystemFont, 'DM Sans', sans-serif;
+    --font-mono: 'SF Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, 'JetBrains Mono', monospace;
+  }
+
+  [data-theme="oled"] {
+    --theme-bg-canvas: #000000;
+    --theme-bg-surface: #08090E;
+    --theme-bg-elevated: #11131C;
+    --theme-border: #1D2030;
+    --theme-border-subtle: rgba(29, 32, 48, 0.85);
+    --theme-text-primary: #FAFAFA;
+    --theme-text-secondary: #A1A1AA;
+    --theme-text-muted: #71717A;
+    --theme-accent: #8B5CF6;
+    --theme-accent-hover: #A78BFA;
+    --theme-accent-soft: #C4B5FD;
+    --theme-accent-glow: rgba(139, 92, 246, 0.16);
+    --theme-accent-surface: rgba(139, 92, 246, 0.15);
+  }
+
+  [data-theme="cyberpunk"] {
+    --theme-bg-canvas: #070912;
+    --theme-bg-surface: #0D1120;
+    --theme-bg-elevated: #151C33;
+    --theme-border: #232F52;
+    --theme-border-subtle: rgba(35, 47, 82, 0.85);
+    --theme-text-primary: #F8FAFC;
+    --theme-text-secondary: #94A3B8;
+    --theme-text-muted: #64748B;
+    --theme-accent: #F43F5E;
+    --theme-accent-hover: #FB7185;
+    --theme-accent-soft: #FDA4AF;
+    --theme-accent-glow: rgba(244, 63, 94, 0.16);
+    --theme-accent-surface: rgba(244, 63, 94, 0.15);
+  }
+
+  [data-theme="catppuccin"] {
+    --theme-bg-canvas: #11111B;
+    --theme-bg-surface: #181825;
+    --theme-bg-elevated: #1E1E2E;
+    --theme-border: #313244;
+    --theme-border-subtle: rgba(49, 50, 68, 0.85);
+    --theme-text-primary: #CDD6F4;
+    --theme-text-secondary: #A6ADC8;
+    --theme-text-muted: #7F849C;
+    --theme-accent: #936DFF;
+    --theme-accent-hover: #B497FF;
+    --theme-accent-soft: #CBA6F7;
+    --theme-accent-glow: rgba(203, 166, 247, 0.16);
+    --theme-accent-surface: rgba(203, 166, 247, 0.15);
+  }
+
+  [data-theme="dracula"] {
+    --theme-bg-canvas: #13141C;
+    --theme-bg-surface: #1C1D29;
+    --theme-bg-elevated: #262837;
+    --theme-border: #36394E;
+    --theme-border-subtle: rgba(54, 57, 78, 0.85);
+    --theme-text-primary: #F8F8F2;
+    --theme-text-secondary: #9EA4C6;
+    --theme-text-muted: #6272A4;
+    --theme-accent: #9568F6;
+    --theme-accent-hover: #B18CFF;
+    --theme-accent-soft: #BD93F9;
+    --theme-accent-glow: rgba(189, 147, 249, 0.16);
+    --theme-accent-surface: rgba(189, 147, 249, 0.15);
+  }
+
+  [data-theme="nord"] {
+    --theme-bg-canvas: #181C24;
+    --theme-bg-surface: #212631;
+    --theme-bg-elevated: #2B3240;
+    --theme-border: #374052;
+    --theme-border-subtle: rgba(55, 64, 82, 0.85);
+    --theme-text-primary: #ECEFF4;
+    --theme-text-secondary: #9AA5B8;
+    --theme-text-muted: #7B88A1;
+    --theme-accent: #0284C7;
+    --theme-accent-hover: #38BDF8;
+    --theme-accent-soft: #7DD3FC;
+    --theme-accent-glow: rgba(56, 189, 248, 0.15);
+    --theme-accent-surface: rgba(56, 189, 248, 0.15);
+  }
+
+  [data-theme="emerald"] {
+    --theme-bg-canvas: #060E0B;
+    --theme-bg-surface: #0B1813;
+    --theme-bg-elevated: #12261E;
+    --theme-border: #1B382C;
+    --theme-border-subtle: rgba(27, 56, 44, 0.85);
+    --theme-text-primary: #ECFDF5;
+    --theme-text-secondary: #86A899;
+    --theme-text-muted: #5C8573;
+    --theme-accent: #059669;
+    --theme-accent-hover: #10B981;
+    --theme-accent-soft: #6EE7B7;
+    --theme-accent-glow: rgba(16, 185, 129, 0.16);
+    --theme-accent-surface: rgba(16, 185, 129, 0.15);
+  }
+
+  [data-theme="crimson"] {
+    --theme-bg-canvas: #0E0608;
+    --theme-bg-surface: #170B0E;
+    --theme-bg-elevated: #241116;
+    --theme-border: #381A22;
+    --theme-border-subtle: rgba(56, 26, 34, 0.85);
+    --theme-text-primary: #FFF1F2;
+    --theme-text-secondary: #B8949A;
+    --theme-text-muted: #8C666D;
+    --theme-accent: #E11D48;
+    --theme-accent-hover: #F43F5E;
+    --theme-accent-soft: #FDA4AF;
+    --theme-accent-glow: rgba(225, 29, 72, 0.16);
+    --theme-accent-surface: rgba(225, 29, 72, 0.15);
+  }
+
+  [data-theme="solarized"] {
+    --theme-bg-canvas: #110E0B;
+    --theme-bg-surface: #191511;
+    --theme-bg-elevated: #241E18;
+    --theme-border: #362D23;
+    --theme-border-subtle: rgba(54, 45, 35, 0.85);
+    --theme-text-primary: #FEF3C7;
+    --theme-text-secondary: #B5A38B;
+    --theme-text-muted: #8A7963;
+    --theme-accent: #D97706;
+    --theme-accent-hover: #F59E0B;
+    --theme-accent-soft: #FCD34D;
+    --theme-accent-glow: rgba(245, 158, 11, 0.16);
+    --theme-accent-surface: rgba(245, 158, 11, 0.15);
+  }
+
+  [data-theme="matrix"] {
+    --theme-bg-canvas: #040906;
+    --theme-bg-surface: #08120B;
+    --theme-bg-elevated: #0E1F14;
+    --theme-border: #183522;
+    --theme-border-subtle: rgba(24, 53, 34, 0.85);
+    --theme-text-primary: #DCFCE7;
+    --theme-text-secondary: #74A684;
+    --theme-text-muted: #4B7A5B;
+    --theme-accent: #16A34A;
+    --theme-accent-hover: #22C55E;
+    --theme-accent-soft: #4ADE80;
+    --theme-accent-glow: rgba(34, 197, 94, 0.16);
+    --theme-accent-surface: rgba(34, 197, 94, 0.15);
+  }
+
+  [data-theme="kyoto-light"] {
+    --theme-bg-canvas: #F2F4F8;
+    --theme-bg-surface: #FFFFFF;
+    --theme-bg-elevated: #F8FAFC;
+    --theme-border: #CBD5E1;
+    --theme-border-subtle: rgba(203, 213, 225, 0.9);
+    --theme-text-primary: #0F172A;
+    --theme-text-secondary: #475569;
+    --theme-text-muted: #64748B;
+    --theme-accent: #4F46E5;
+    --theme-accent-hover: #6366F1;
+    --theme-accent-soft: #4338CA;
+    --theme-accent-glow: rgba(79, 70, 229, 0.1);
+    --theme-accent-surface: rgba(79, 70, 229, 0.1);
+  }
+
+  [data-theme="sakura-light"] {
+    --theme-bg-canvas: #FAF2F6;
+    --theme-bg-surface: #FFFFFF;
+    --theme-bg-elevated: #FDF7FA;
+    --theme-border: #E5CED8;
+    --theme-border-subtle: rgba(229, 206, 216, 0.9);
+    --theme-text-primary: #1F1219;
+    --theme-text-secondary: #644957;
+    --theme-text-muted: #8A6B7B;
+    --theme-accent: #DB2777;
+    --theme-accent-hover: #EC4899;
+    --theme-accent-soft: #BE185D;
+    --theme-accent-glow: rgba(219, 39, 119, 0.1);
+    --theme-accent-surface: rgba(219, 39, 119, 0.1);
+  }
+
+  /* Custom Accent Color Overrides */
+  [data-accent="indigo"] {
+    --theme-accent: #6366F1;
+    --theme-accent-hover: #818CF8;
+    --theme-accent-soft: #A5B4FC;
+    --theme-accent-glow: rgba(99, 102, 241, 0.16);
+    --theme-accent-surface: rgba(99, 102, 241, 0.15);
+  }
+  [data-accent="violet"] {
+    --theme-accent: #8B5CF6;
+    --theme-accent-hover: #A78BFA;
+    --theme-accent-soft: #C4B5FD;
+    --theme-accent-glow: rgba(139, 92, 246, 0.16);
+    --theme-accent-surface: rgba(139, 92, 246, 0.15);
+  }
+  [data-accent="rose"] {
+    --theme-accent: #F43F5E;
+    --theme-accent-hover: #FB7185;
+    --theme-accent-soft: #FDA4AF;
+    --theme-accent-glow: rgba(244, 63, 94, 0.16);
+    --theme-accent-surface: rgba(244, 63, 94, 0.15);
+  }
+  [data-accent="emerald"] {
+    --theme-accent: #059669;
+    --theme-accent-hover: #10B981;
+    --theme-accent-soft: #6EE7B7;
+    --theme-accent-glow: rgba(16, 185, 129, 0.16);
+    --theme-accent-surface: rgba(16, 185, 129, 0.15);
+  }
+  [data-accent="cyan"] {
+    --theme-accent: #0891B2;
+    --theme-accent-hover: #06B6D4;
+    --theme-accent-soft: #67E8F9;
+    --theme-accent-glow: rgba(6, 182, 212, 0.16);
+    --theme-accent-surface: rgba(6, 182, 212, 0.15);
+  }
+  [data-accent="amber"] {
+    --theme-accent: #D97706;
+    --theme-accent-hover: #F59E0B;
+    --theme-accent-soft: #FCD34D;
+    --theme-accent-glow: rgba(245, 158, 11, 0.16);
+    --theme-accent-surface: rgba(245, 158, 11, 0.15);
+  }
+  [data-accent="crimson"] {
+    --theme-accent: #E11D48;
+    --theme-accent-hover: #F43F5E;
+    --theme-accent-soft: #FDA4AF;
+    --theme-accent-glow: rgba(225, 29, 72, 0.16);
+    --theme-accent-surface: rgba(225, 29, 72, 0.15);
+  }
+  [data-accent="sky"] {
+    --theme-accent: #0284C7;
+    --theme-accent-hover: #0EA5E9;
+    --theme-accent-soft: #7DD3FC;
+    --theme-accent-glow: rgba(14, 165, 233, 0.16);
+    --theme-accent-surface: rgba(14, 165, 233, 0.15);
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background-color: var(--theme-bg-canvas);
+    color: var(--theme-text-primary);
+    overflow-x: hidden;
+    letter-spacing: -0.011em;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    transition: background-color 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+      color 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  h1, h2, h3, h4, .font-display {
+    font-family: var(--font-display);
+    letter-spacing: -0.022em;
+  }
+
+  .font-mono, .tabular-nums {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* ============================================================================
+   DYNAMIC STUDIO THEME BINDINGS (Maps utility classes across all components)
+   ============================================================================ */
+
+.bg-\[\#0B0F17\] {
+  background-color: var(--theme-bg-canvas) !important;
+}
+.bg-\[\#0B0F17\]\/95,
+.bg-\[\#0B0F17\]\/90,
+.bg-\[\#0B0F17\]\/80,
+.bg-\[\#0B0F17\]\/70,
+.bg-\[\#0B0F17\]\/60 {
+  background-color: color-mix(in srgb, var(--theme-bg-canvas) 88%, transparent) !important;
+}
+
+.bg-\[\#0F1523\] {
+  background-color: var(--theme-bg-surface) !important;
+}
+.bg-\[\#0F1523\]\/90,
+.bg-\[\#0F1523\]\/80,
+.bg-\[\#0F1523\]\/70 {
+  background-color: color-mix(in srgb, var(--theme-bg-surface) 90%, transparent) !important;
+}
+
+.border-slate-800,
+.border-slate-800\/80,
+.border-slate-800\/90,
+.border-slate-800\/70 {
+  border-color: var(--theme-border) !important;
+}
+
+[data-surface="bordered"] .border-slate-800,
+[data-surface="bordered"] .border-slate-800\/80 {
+  border-color: color-mix(in srgb, var(--theme-accent) 34%, var(--theme-border)) !important;
+}
+
+[data-surface="matte"] .studio-panel,
+[data-surface="matte"] .studio-subpanel {
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+
+/* Accent Color Dynamic Mapping */
+.bg-indigo-600 {
+  background-color: var(--theme-accent) !important;
+}
+.hover\:bg-indigo-500:hover,
+.hover\:bg-indigo-600:hover {
+  background-color: var(--theme-accent-hover) !important;
+}
+.text-indigo-400,
+.text-indigo-300 {
+  color: var(--theme-accent-soft) !important;
+}
+.border-indigo-500,
+.border-indigo-500\/70,
+.border-indigo-500\/60,
+.border-indigo-500\/50,
+.border-indigo-500\/40,
+.focus\:border-indigo-500:focus {
+  border-color: var(--theme-accent) !important;
+}
+.bg-indigo-600\/15,
+.bg-indigo-600\/20,
+.bg-indigo-950\/30,
+.bg-indigo-950\/25,
+.bg-indigo-950\/20,
+.bg-indigo-950\/15 {
+  background-color: var(--theme-accent-surface) !important;
+}
+
+/* Light Mode Adaptive Contrast Rules for Apple Books Paper & Sakura Daylight */
+[data-theme-mode="light"] .text-white,
+[data-theme-mode="light"] .text-\[\#F1F5F9\],
+[data-theme-mode="light"] .text-slate-100,
+[data-theme-mode="light"] .text-slate-200 {
+  color: var(--theme-text-primary) !important;
+}
+[data-theme-mode="light"] .bg-indigo-600,
+[data-theme-mode="light"] .bg-emerald-600,
+[data-theme-mode="light"] .bg-rose-600 {
+  color: #FFFFFF !important;
+}
+[data-theme-mode="light"] .bg-indigo-600 span,
+[data-theme-mode="light"] .bg-indigo-600 svg {
+  color: #FFFFFF !important;
+}
+[data-theme-mode="light"] .text-slate-300,
+[data-theme-mode="light"] .text-slate-400 {
+  color: var(--theme-text-secondary) !important;
+}
+[data-theme-mode="light"] .text-slate-500 {
+  color: var(--theme-text-muted) !important;
+}
+[data-theme-mode="light"] .bg-slate-800,
+[data-theme-mode="light"] .bg-slate-800\/80,
+[data-theme-mode="light"] .bg-slate-800\/90,
+[data-theme-mode="light"] .bg-slate-900,
+[data-theme-mode="light"] .bg-slate-900\/40,
+[data-theme-mode="light"] .bg-slate-900\/50,
+[data-theme-mode="light"] .bg-slate-900\/90 {
+  background-color: var(--theme-bg-elevated) !important;
+  color: var(--theme-text-primary) !important;
+}
+[data-theme-mode="light"] .border-slate-700,
+[data-theme-mode="light"] .border-slate-700\/80 {
+  border-color: var(--theme-border) !important;
+}
+
+/* ============================================================================
+   UI ANIMATIONS, APPLE SPRING BUTTON PHYSICS & MICRO-INTERACTIONS
+   ============================================================================ */
+
+@keyframes viewEnter {
+  0% {
+    opacity: 0;
+    transform: translateY(10px) scale(0.996);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes cardReveal {
+  0% {
+    opacity: 0;
+    transform: translateY(14px) scale(0.988);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes modalBackdropFade {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes modalPanelPop {
+  0% {
+    opacity: 0;
+    transform: translateY(14px) scale(0.975);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes appleButtonSpring {
+  0% {
+    transform: scale(1);
+  }
+  35% {
+    transform: scale(0.945) translateY(1px);
+  }
+  75% {
+    transform: scale(1.018);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes cursorRippleBurst {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.42;
+  }
+  100% {
+    transform: scale(1.65);
+    opacity: 0;
+  }
+}
+
+@keyframes dropdownPopoverSpring {
+  0% {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-cursor-ripple {
+  animation: cursorRippleBurst 0.36s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-dropdown-popover {
+  transform-origin: top center;
+  animation: dropdownPopoverSpring 0.2s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-view-enter {
+  animation: viewEnter 0.24s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-card-enter {
+  animation: cardReveal 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: min(calc(var(--stagger-idx, 0) * 18ms), 180ms);
+}
+
+.animate-modal-backdrop {
+  animation: modalBackdropFade 0.18s ease-out both;
+}
+
+.animate-modal-panel {
+  animation: modalPanelPop 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.svg-orbit-ring {
+  transform-origin: 150px 160px;
+}
+
+/* Elastic Spring Physics for Toggle Switch Thumbs */
+button[role="switch"] {
+  transition:
+    background-color 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.16s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+button[role="switch"] span {
+  transition:
+    transform 0.26s cubic-bezier(0.34, 1.56, 0.64, 1),
+    background-color 0.2s ease;
+}
+
+/* Shimmering Progress Bar Fill for Reader & Batch Downloader */
+.shimmer-progress-fill {
+  position: relative;
+  overflow: hidden;
+  transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Authentic Manga Screentone Halftone Pattern Surface */
+.manga-screentone-bg {
+  background-image: radial-gradient(
+    color-mix(in srgb, var(--theme-accent) 16%, transparent) 1px,
+    transparent 1px
+  );
+  background-size: 16px 16px;
+}
+
+.manga-spotlight-stage {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(
+      circle at 14% 20%,
+      color-mix(in srgb, var(--theme-accent) 15%, transparent),
+      transparent 48%
+    ),
+    var(--theme-bg-surface);
+}
+
+/* 3D Tankobon Collector Volume Spine & Specular Cover Lighting */
+.tankobon-volume-frame {
+  position: relative;
+  overflow: hidden;
+  box-shadow:
+    -3px 6px 16px -4px rgba(0, 0, 0, 0.45),
+    inset 2px 0 4px rgba(255, 255, 255, 0.1);
+  transition: transform 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.tankobon-volume-frame::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 10px;
+  z-index: 10;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.18) 0%,
+    rgba(0, 0, 0, 0.42) 45%,
+    rgba(255, 255, 255, 0.08) 74%,
+    transparent 100%
+  );
+}
+
+/* Interactive Card Polish & Hover Elevation with Offscreen Rendering Containment */
+.manga-card-interactive {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 420px;
+  box-shadow:
+    0 2px 12px -3px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.03);
+  transition:
+    transform 0.24s cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 0.2s ease,
+    box-shadow 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+[data-hover="enabled"] .manga-card-interactive:hover {
+  transform: translateY(-4px) scale(1.006);
+  border-color: color-mix(in srgb, var(--theme-accent) 75%, var(--theme-border));
+  box-shadow:
+    0 14px 30px -6px rgba(0, 0, 0, 0.5),
+    0 0 0 1px color-mix(in srgb, var(--theme-accent) 26%, transparent),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.09);
+}
+
+[data-hover="enabled"] .manga-card-interactive .manga-cover-zoom {
+  transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+[data-hover="enabled"] .manga-card-interactive:hover .manga-cover-zoom {
+  transform: scale(1.045);
+}
+
+/* Minimal Clean Studio Surface & Panel Polish */
+.studio-panel {
+  background-color: var(--theme-bg-surface);
+  border: 1px solid var(--theme-border);
+  box-shadow:
+    0 4px 20px -6px rgba(0, 0, 0, 0.26),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.035);
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.studio-subpanel {
+  background-color: var(--theme-bg-canvas);
+  border: 1px solid var(--theme-border);
+  transition: border-color 0.18s ease, background-color 0.18s ease;
+}
+
+.studio-kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.2rem;
+  height: 1.15rem;
+  padding: 0 0.32rem;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+  border-radius: 0.28rem;
+  background-color: color-mix(in srgb, var(--theme-bg-canvas) 85%, #000000);
+  border: 1px solid var(--theme-border);
+  color: var(--theme-text-secondary);
+  box-shadow: inset 0 -1px 0 0 rgba(0, 0, 0, 0.35);
+}
+
+/* Accessible Focus Rings & Tactile Apple Button Press Animations */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--theme-accent);
+  outline-offset: 2px;
+}
+
+button:not(:disabled) {
+  transform-origin: center;
+  will-change: transform;
+  transition:
+    transform 0.18s cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 0.16s ease,
+    border-color 0.16s ease,
+    color 0.16s ease,
+    opacity 0.16s ease,
+    box-shadow 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+button:not(:disabled):hover {
+  transform: translateY(-1px);
+}
+
+button:not(:disabled):active {
+  transform: scale(0.95) translateY(0.5px) !important;
+  transition-duration: 0.06s !important;
+}
+
+button.btn-pressed-anim:not(:disabled) {
+  animation: appleButtonSpring 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Snappy & Reduced Motion Overrides */
+[data-motion="snappy"] .animate-view-enter,
+[data-motion="snappy"] .animate-card-enter,
+[data-motion="snappy"] .animate-modal-panel,
+[data-motion="snappy"] .animate-dropdown-popover,
+[data-motion="snappy"] button.btn-pressed-anim:not(:disabled) {
+  animation-duration: 0.12s !important;
+}
+
+[data-motion="minimal"] *,
+[data-motion="minimal"] *::before,
+[data-motion="minimal"] *::after {
+  animation-duration: 0.001ms !important;
+  transition-duration: 0.001ms !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* Ambient Studio Top Lighting */
+.studio-ambient-glow {
+  background: radial-gradient(
+    ellipse 75% 34% at 50% -6%,
+    var(--theme-accent-glow),
+    transparent 68%
+  );
+}
+
+[data-ambient-glow="disabled"] .studio-ambient-glow,
+.studio-ambient-glow[data-ambient-glow="disabled"] {
+  background: var(--theme-bg-canvas) !important;
+}
+
+[data-ambient-glow="disabled"] .manga-spotlight-stage {
+  background: var(--theme-bg-surface) !important;
+}
+
+/* Custom subtle scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--theme-bg-canvas);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--theme-border);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--theme-accent);
+}
