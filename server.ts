@@ -709,7 +709,7 @@ app.post('/api/github/disconnect', (_req, res) => {
 });
 
 app.get('/api/github/release-bundle', (req, res) => {
-  const tag = String(req.query.tag || 'v2.4.0')
+  const tag = String(req.query.tag || 'v2.5.0')
     .trim()
     .replace(/[^a-zA-Z0-9._-]+/g, '-');
   const zipBytes = buildProjectReleaseZipBuffer(__dirname);
@@ -744,8 +744,8 @@ app.post('/api/github/publish-release', async (req, res) => {
   try {
     const result = await publishReleaseToGitHub(__dirname, token, {
       repoName: repoName || 'fmd2-archivist-studio',
-      tagName: tagName || 'v2.4.0',
-      releaseTitle: releaseTitle || 'FMD2 Archivist Studio v2.4.0',
+      tagName: tagName || 'v2.5.0',
+      releaseTitle: releaseTitle || 'FMD2 Archivist Studio v2.5.0',
       releaseNotes: releaseNotes || '',
       isPrivate: Boolean(isPrivate),
       prerelease: Boolean(prerelease),

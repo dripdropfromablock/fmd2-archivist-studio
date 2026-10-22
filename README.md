@@ -2,6 +2,8 @@
 
 > **A standalone manga and webtoon reader, live source browser, and CBZ / ZIP chapter archiver built around five live FMD2 source adapters and the broader FMD2 connector catalogue.**
 
+**Current stable release: v2.5.0**
+
 ---
 
 ## Overview
@@ -11,6 +13,9 @@
 ### Key Capabilities
 
 - **Browse Sources Primary Workspace**: Live catalog browsing across `WeebCentral`, `AsuraScans`, `MangaDex`, `LikeManga`, and `MangaKatana`, with additional FMD2 Lua connector descriptors clearly separated from live adapters.
+- **Discovery Home**: Spotlight picks, Continue Reading progress, ranking shelves, hot updates, rising stories, curated lists, authors, and community preview cards.
+- **Global Command Palette**: Press `Ctrl+K` to search series and the available user and author scopes with keyboard navigation.
+- **Saved Filter Presets**: Save and restore format, status, genre, and micro-trope filters in local storage.
 - **Interactive Header & Filter Deck Dropdowns**: Filter and sort live catalogs by **Genre**, **Status** (`Ongoing`, `Completed`, `Hiatus`), **Sort by** (`Popularity`, `Newest`, `Alphabetical`, `Rating`, `Most Chapters`), **Format**, **Demographic**, and **Minimum Chapters** using accessible custom popover dropdown menus with live search and item counts.
 - **Adaptive Manga & Webtoon Reader**: Automatically detects **Webtoon Long-Strip** vs. **Single-Page / Double-Page RTL Manga** layouts based on series metadata, complete with optical image filters (contrast, warmth, sharpen, grayscale), auto-scroll, and keyboard navigation.
 - **Batch CBZ / ZIP Archivist Engine**: Concurrent page downloads with range selection (`1-25`, `10+`), automatic missing-chapter detection, and real PKZIP packaging. CBZ exports include `ComicInfo.xml` metadata.

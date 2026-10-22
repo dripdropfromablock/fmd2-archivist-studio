@@ -74,35 +74,43 @@ interface GitHubReleaseModalProps {
   onClose: () => void;
 }
 
-const DEFAULT_RELEASE_NOTES = `## FMD2 Archivist Studio — v2.4.0 Release Notes
+const DEFAULT_RELEASE_NOTES = `## FMD2 Archivist Studio — v2.5.0 Release Notes
 
 > **Standalone manga and webtoon reader, live source browser, and CBZ / ZIP chapter archiver built around FMD2 source adapters.**
 
 ### Highlights
+- **New Discovery Home**: Spotlight carousel, Continue Reading progress shelf, ranking shelves, hot updates, rising stories, curated lists, authors, and community preview cards.
+- **Command Palette**: Open global search with Ctrl+K and move through scoped Series, Users, and Authors results using the keyboard.
+- **Saved Filter Presets**: Save and restore format, status, genre, and micro-trope filters locally.
+- **Reader and Navigation Polish**: Carbon and violet visual system across the catalog, series pages, reader, downloads, and settings, with responsive navigation, card motion, and fixed-ratio shimmer placeholders.
+- **Server Reliability**: Server-side source browsing and signed image-proxy protections, with coverage for the live scraper and browse APIs.
 - **Browse Sources Primary Home Workspace**: Direct multi-source live browsing across \`WeebCentral\`, \`AsuraScans\`, \`MangaDex\`, \`LikeManga\`, \`MangaKatana\`, and 600+ verified FMD2 Lua connectors.
 - **Custom Interactive Dropdown Menu UI**: Animated popover dropdown menus with search filtering, badges, and keyboard navigation across Browse Sources (\`Genre\`, \`Status\`, \`Sort by\`, \`Source\`, \`Format\`, \`Demographic\`, \`Chapters\`), Reader Toolbar, and Studio Settings.
 - **Subtle Tactile UI & Pointer Motion**: Refined cursor halo/ripple feedback and Apple spring micro-interactions.
 - **Batch CBZ / ZIP Archiver**: Concurrent chapter page downloads and packaging, with optional \`ComicInfo.xml\` metadata in CBZ files.
+
+### Notes
+Community profiles and discussions are preview-only, and ranking shelves use the source data available to the app.
 
 ### Credits & Acknowledgments
 Built as a standalone web application on top of **[dazedcat19/FMD2 (Free Manga Downloader 2)](https://github.com/dazedcat19/FMD2)** and inspired by **[riderkick/FMD](https://github.com/riderkick/FMD)** and the open-source FMD2 Lua module contributors.`;
 
 const VERSION_PRESETS: DropdownMenuItem<string>[] = [
   {
-    value: 'v2.4.0',
-    label: 'v2.4.0 (Stable Release)',
-    description: 'Latest Browse Sources & Custom Dropdown UI release',
+    value: 'v2.5.0',
+    label: 'v2.5.0 (Stable Release)',
+    description: 'Discovery home, command palette, saved filters, and reader polish',
     badge: 'Latest',
-  },
-  {
-    value: 'v2.4.1',
-    label: 'v2.4.1 (Patch Release)',
-    description: 'Hotfix & layout polish tag',
   },
   {
     value: 'v2.5.0-rc.1',
     label: 'v2.5.0-rc.1 (Release Candidate)',
-    description: 'Pre-release preview build',
+    description: 'Previous release candidate',
+  },
+  {
+    value: 'v2.4.0',
+    label: 'v2.4.0 (Previous Stable Release)',
+    description: 'Browse Sources and custom dropdown release',
   },
 ];
 
@@ -113,9 +121,9 @@ export const GitHubReleaseModal: React.FC<GitHubReleaseModalProps> = ({
   const [status, setStatus] = useState<GitHubStatusResponse | null>(null);
   const [isLoadingStatus, setIsLoadingStatus] = useState<boolean>(false);
   const [repoName, setRepoName] = useState<string>('fmd2-archivist-studio');
-  const [tagName, setTagName] = useState<string>('v2.4.0');
+  const [tagName, setTagName] = useState<string>('v2.5.0');
   const [releaseTitle, setReleaseTitle] = useState<string>(
-    'FMD2 Archivist Studio v2.4.0 — Standalone Multi-Source Reader & Archivist'
+    'FMD2 Archivist Studio v2.5.0 — Discovery & Reader Update'
   );
   const [releaseNotes, setReleaseNotes] = useState<string>(DEFAULT_RELEASE_NOTES);
   const [isPrivate, setIsPrivate] = useState<boolean>(false);

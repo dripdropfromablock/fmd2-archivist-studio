@@ -1,7 +1,7 @@
 {
-  "name": "react-example",
+  "name": "fmd2-archivist-studio",
   "private": true,
-  "version": "0.0.0",
+  "version": "2.5.0",
   "type": "module",
   "engines": {
     "node": "^20.19.0 || >=22.12.0"

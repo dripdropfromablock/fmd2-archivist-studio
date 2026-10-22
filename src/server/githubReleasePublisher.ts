@@ -530,7 +530,7 @@ export async function publishReleaseToGitHub(
     !rawName || rawName.toLowerCase() === 'fmd2'
       ? 'fmd2-archivist-studio'
       : rawName;
-  const cleanTag = req.tagName.trim() || 'v2.4.0';
+  const cleanTag = req.tagName.trim() || 'v2.5.0';
   const releaseTitle = req.releaseTitle.trim() || `FMD2 Archivist Studio ${cleanTag}`;
   const releaseNotes =
     req.releaseNotes.trim() ||
