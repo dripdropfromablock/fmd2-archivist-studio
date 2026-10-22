@@ -22,6 +22,14 @@ import {
   UploadCloud,
   DownloadCloud,
   Laptop,
+  Home,
+  TrendingUp,
+  UserRound,
+  Layers,
+  UsersRound,
+  ChevronLeft,
+  ChevronRight,
+  Settings2,
 } from 'lucide-react';
 import {
   ALL_FMD2_SOURCES,
@@ -89,17 +97,57 @@ import {
 } from './utils/browserDownload.ts';
 import { MangaCoverArt } from './components/MangaArtRenderer.tsx';
 import { InteractiveCursorOverlay } from './components/InteractiveCursorOverlay.tsx';
-import { MangaDetailModal } from './components/MangaDetailModal.tsx';
-import { MangaSeriesPage } from './components/MangaSeriesPage.tsx';
-import { DownloadManagerView } from './components/DownloadManagerView.tsx';
-import { MangaReaderView } from './components/MangaReaderView.tsx';
-import { SmartDiscoveryView } from './components/SmartDiscoveryView.tsx';
-import { SourcesSettingsView } from './components/SourcesSettingsView.tsx';
-import { BrowseSourcesView } from './components/BrowseSourcesView.tsx';
-import { ReadLaterQueueView } from './components/ReadLaterQueueView.tsx';
-import { GitHubReleaseModal } from './components/GitHubReleaseModal.tsx';
+import { DiscoverHomeView } from './components/DiscoverHomeView.tsx';
+import { CommandPalette } from './components/CommandPalette.tsx';
+
+const BrowseSourcesView = React.lazy(() =>
+  import('./components/BrowseSourcesView.tsx').then((module) => ({
+    default: module.BrowseSourcesView,
+  }))
+);
+const ReadLaterQueueView = React.lazy(() =>
+  import('./components/ReadLaterQueueView.tsx').then((module) => ({
+    default: module.ReadLaterQueueView,
+  }))
+);
+const MangaSeriesPage = React.lazy(() =>
+  import('./components/MangaSeriesPage.tsx').then((module) => ({
+    default: module.MangaSeriesPage,
+  }))
+);
+const DownloadManagerView = React.lazy(() =>
+  import('./components/DownloadManagerView.tsx').then((module) => ({
+    default: module.DownloadManagerView,
+  }))
+);
+const MangaReaderView = React.lazy(() =>
+  import('./components/MangaReaderView.tsx').then((module) => ({
+    default: module.MangaReaderView,
+  }))
+);
+const SmartDiscoveryView = React.lazy(() =>
+  import('./components/SmartDiscoveryView.tsx').then((module) => ({
+    default: module.SmartDiscoveryView,
+  }))
+);
+const SourcesSettingsView = React.lazy(() =>
+  import('./components/SourcesSettingsView.tsx').then((module) => ({
+    default: module.SourcesSettingsView,
+  }))
+);
+const MangaDetailModal = React.lazy(() =>
+  import('./components/MangaDetailModal.tsx').then((module) => ({
+    default: module.MangaDetailModal,
+  }))
+);
+const GitHubReleaseModal = React.lazy(() =>
+  import('./components/GitHubReleaseModal.tsx').then((module) => ({
+    default: module.GitHubReleaseModal,
+  }))
+);
 
 type ActiveTab =
+  | 'home'
   | 'catalog'
   | 'browse'
   | 'read-later'
@@ -113,7 +161,7 @@ type CatalogLibraryFilter = 'all' | 'saved' | 'recent';
 const READING_PROGRESS_STORAGE_KEY = 'fmd2_reading_progress_v1';
 const UI_THEME_STORAGE_KEY = 'fmd2_ui_theme_prefs_v1';
 const CLOUD_SYNC_CONFIG_STORAGE_KEY = 'fmd2_cloud_sync_config_v1';
-const IS_PACKAGED_RELEASE = true;
+const IS_PACKAGED_RELEASE = false;
 
 const INITIAL_READING_HISTORY: Record<string, ReadingSessionProgress> = {};
 
@@ -129,8 +177,45 @@ function createDefaultCloudSyncConfig(): CloudSyncConfig {
   };
 }
 
+function WorkspaceLoadingFallback() {
+  return (
+    <div
+      className="min-h-[40vh] flex items-center justify-center gap-3 text-sm text-slate-400"
+      role="status"
+      aria-live="polite"
+    >
+      <span
+        className="h-4 w-4 rounded-full border-2 border-slate-700 border-t-indigo-400 animate-spin"
+        aria-hidden="true"
+      />
+      <span>Loading workspace…</span>
+    </div>
+  );
+}
+
+function ModalLoadingFallback() {
+  return (
+    <div
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+      role="status"
+      aria-live="polite"
+    >
+      <div className="flex items-center gap-3 rounded-xl border border-slate-700 bg-[#0F1523] px-5 py-4 text-sm text-slate-300 shadow-2xl">
+        <span
+          className="h-4 w-4 rounded-full border-2 border-slate-700 border-t-indigo-400 animate-spin"
+          aria-hidden="true"
+        />
+        <span>Opening dialog…</span>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
-  const [activeTab, setActiveTab] = useState<ActiveTab>('browse');
+  const [activeTab, setActiveTab] = useState<ActiveTab>('home');
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+  const [activeHomeSection, setActiveHomeSection] = useState('browse');
   const [catalog, setCatalog] = useState<MangaSeries[]>(INITIAL_MANGA_CATALOG);
   const [isInitialCatalogLoading, setIsInitialCatalogLoading] = useState<boolean>(true);
   const [liveSearchResults, setLiveSearchResults] = useState<MangaSeries[]>([]);
@@ -190,7 +275,7 @@ export default function App() {
   // Active series for Main Manga Page and optional quick inspector modal
   const [activeSeriesPage, setActiveSeriesPage] = useState<MangaSeries | null>(null);
   const [seriesReturnTab, setSeriesReturnTab] = useState<
-    'catalog' | 'browse' | 'read-later' | 'archivist'
+    'home' | 'catalog' | 'browse' | 'read-later' | 'archivist'
   >('browse');
   const [inspectedSeries, setInspectedSeries] = useState<MangaSeries | null>(null);
 
@@ -500,6 +585,7 @@ export default function App() {
   // Quick URL Modal & GitHub Release Publisher Modal
   const [showUrlModal, setShowUrlModal] = useState(false);
   const [showGitHubReleaseModal, setShowGitHubReleaseModal] = useState(false);
+  const [hasOpenedGitHubReleaseModal, setHasOpenedGitHubReleaseModal] = useState(false);
   const [modalUrlInput, setModalUrlInput] = useState('');
   const [modalFormat, setModalFormat] = useState<ArchiveFormat>('CBZ');
   const [modalError, setModalError] = useState<string | null>(null);
@@ -507,6 +593,12 @@ export default function App() {
   // Power-user global keyboard shortcut system for primary navigation tabs (c, b, d, r, a, s & 1-6)
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setIsCommandPaletteOpen(true);
+        return;
+      }
+
       const target = e.target as HTMLElement | null;
       const isEditableTarget = Boolean(
         target &&
@@ -879,6 +971,7 @@ export default function App() {
     if (
       activeTab === 'catalog' ||
       activeTab === 'browse' ||
+      activeTab === 'home' ||
       activeTab === 'read-later' ||
       activeTab === 'archivist'
     ) {
@@ -1445,6 +1538,36 @@ export default function App() {
     }
   };
 
+  const activeNavigationTab =
+    activeTab === 'series' ? seriesReturnTab : activeTab;
+
+  const navigateToHomeSection = (sectionId?: string) => {
+    setActiveTab('home');
+    setActiveHomeSection(sectionId || 'browse');
+    if (sectionId) {
+      window.setTimeout(() => {
+        document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 50);
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  const desktopNavItems = [
+    { label: 'Browse', icon: Home, action: () => navigateToHomeSection(), active: activeNavigationTab === 'home' && activeHomeSection === 'browse' },
+    { label: 'Trending', icon: TrendingUp, action: () => navigateToHomeSection('trending'), active: activeNavigationTab === 'home' && activeHomeSection === 'trending' },
+    { label: 'Authors', icon: UserRound, action: () => navigateToHomeSection('authors'), active: activeNavigationTab === 'home' && activeHomeSection === 'authors' },
+    { label: 'Collections', icon: Layers, action: () => navigateToHomeSection('top-lists'), active: activeNavigationTab === 'home' && activeHomeSection === 'top-lists' },
+    { label: 'Groups', icon: UsersRound, action: () => navigateToHomeSection('community'), active: activeNavigationTab === 'home' && activeHomeSection === 'community' },
+  ];
+
+  const libraryNavItems = [
+    { label: 'All titles', icon: BookOpen, tab: 'catalog' as ActiveTab, active: activeNavigationTab === 'catalog' || activeNavigationTab === 'browse' },
+    { label: 'Read later', icon: Bookmark, tab: 'read-later' as ActiveTab, active: activeNavigationTab === 'read-later', count: readLaterQueue.length },
+    { label: 'Downloads', icon: Download, tab: 'downloads' as ActiveTab, active: activeNavigationTab === 'downloads', count: queueStats.totalTasks },
+    { label: 'Reader', icon: BookOpen, tab: 'reader' as ActiveTab, active: activeNavigationTab === 'reader' },
+  ];
+
   return (
     <div
       data-theme={themePrefs.themeId}
@@ -1455,7 +1578,7 @@ export default function App() {
       data-surface={themePrefs.surfaceStyle}
       data-hover={themePrefs.cardHoverEffects ? 'enabled' : 'disabled'}
       data-ambient-glow={themePrefs.ambientGlow ? 'enabled' : 'disabled'}
-      className={`min-h-screen flex flex-col bg-[#0B0F17] text-[#F1F5F9] ${
+      className={`relative min-h-screen bg-[#090A0F] text-[#F1F5F9] ${
         themePrefs.ambientGlow ? 'studio-ambient-glow' : ''
       }`}
     >
@@ -1468,8 +1591,63 @@ export default function App() {
         ambientSpotlight={themePrefs.ambientGlow}
       />
 
+      {activeTab !== 'reader' && (
+        <aside className={`fixed inset-y-0 left-0 z-40 hidden flex-col border-r border-white/[0.06] bg-[#0B0C12] transition-[width] duration-200 lg:flex ${isSidebarCollapsed ? 'w-[76px]' : 'w-[248px]'}`}>
+          <div className={`flex h-[72px] items-center border-b border-white/[0.06] ${isSidebarCollapsed ? 'justify-center px-2' : 'justify-between px-5'}`}>
+            <button type="button" onClick={() => navigateToHomeSection()} className="flex min-w-0 items-center gap-3 text-left" aria-label="FMD2 Studio home">
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-violet-500 to-rose-500 text-sm font-black text-white shadow-[0_8px_25px_-10px_rgba(124,58,237,.9)]">F</span>
+              {!isSidebarCollapsed && <span className="min-w-0"><span className="block font-display text-sm font-bold tracking-tight text-white">FMD2 Studio</span><span className="mt-0.5 block text-[8px] font-bold uppercase tracking-[0.2em] text-white/30">READ · SAVE · DISCOVER</span></span>}
+            </button>
+            {!isSidebarCollapsed && <button type="button" onClick={() => setIsSidebarCollapsed(true)} className="grid h-8 w-8 place-items-center rounded-lg text-white/35 transition-colors hover:bg-white/[0.05] hover:text-white" aria-label="Collapse sidebar"><ChevronLeft className="h-4 w-4" /></button>}
+          </div>
+
+          {isSidebarCollapsed && <button type="button" onClick={() => setIsSidebarCollapsed(false)} className="mx-auto mt-3 grid h-8 w-8 place-items-center rounded-lg text-white/35 transition-colors hover:bg-white/[0.05] hover:text-white" aria-label="Expand sidebar"><ChevronRight className="h-4 w-4" /></button>}
+
+          <div className={`flex-1 overflow-y-auto py-5 ${isSidebarCollapsed ? 'px-2' : 'px-3'}`}>
+            {!isSidebarCollapsed && <p className="mb-2 px-3 text-[9px] font-bold uppercase tracking-[0.18em] text-white/25">Discover</p>}
+            <nav aria-label="Discovery" className="space-y-1">
+              {desktopNavItems.map(({ label, icon: Icon, action, active }) => (
+                <button key={label} type="button" onClick={action} aria-current={active ? 'page' : undefined} title={isSidebarCollapsed ? label : undefined} className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-[11px] font-semibold transition-colors ${isSidebarCollapsed ? 'justify-center' : ''} ${active ? 'bg-violet-500/12 text-violet-100 ring-1 ring-violet-400/10' : 'text-white/45 hover:bg-white/[0.04] hover:text-white/85'}`}>
+                  <Icon className={`h-4 w-4 shrink-0 ${active ? 'text-violet-200' : ''}`} />{!isSidebarCollapsed && <span>{label}</span>}
+                </button>
+              ))}
+            </nav>
+
+            <div className="my-5 border-t border-white/[0.06]" />
+            {!isSidebarCollapsed && <p className="mb-2 px-3 text-[9px] font-bold uppercase tracking-[0.18em] text-white/25">Your library</p>}
+            <nav aria-label="Library" className="space-y-1">
+              {libraryNavItems.map(({ label, icon: Icon, tab, active, count }) => (
+                <button key={label} type="button" onClick={() => setActiveTab(tab)} aria-current={active ? 'page' : undefined} title={isSidebarCollapsed ? label : undefined} className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-[11px] font-semibold transition-colors ${isSidebarCollapsed ? 'justify-center' : ''} ${active ? 'bg-white/[0.06] text-white' : 'text-white/40 hover:bg-white/[0.04] hover:text-white/80'}`}>
+                  <Icon className="h-4 w-4 shrink-0" />{!isSidebarCollapsed && <><span className="flex-1">{label}</span>{typeof count === 'number' && count > 0 && <span className="rounded-md bg-white/[0.07] px-1.5 py-0.5 text-[9px] tabular-nums text-white/55">{count}</span>}</>}
+                </button>
+              ))}
+            </nav>
+          </div>
+
+          <div className={`border-t border-white/[0.06] py-3 ${isSidebarCollapsed ? 'px-2' : 'px-3'}`}>
+            <button type="button" onClick={() => setActiveTab('archivist')} title={isSidebarCollapsed ? 'Archivist AI' : undefined} className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-[11px] font-semibold text-white/40 transition-colors hover:bg-white/[0.04] hover:text-white/85 ${isSidebarCollapsed ? 'justify-center' : ''}`}><Sparkles className="h-4 w-4 shrink-0 text-rose-200" />{!isSidebarCollapsed && <span className="flex-1">Archivist AI</span>}</button>
+            <button type="button" onClick={() => setActiveTab('settings')} title={isSidebarCollapsed ? 'Settings' : undefined} aria-current={activeNavigationTab === 'settings' ? 'page' : undefined} className={`mt-1 flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-[11px] font-semibold transition-colors ${isSidebarCollapsed ? 'justify-center' : ''} ${activeNavigationTab === 'settings' ? 'bg-white/[0.06] text-white' : 'text-white/40 hover:bg-white/[0.04] hover:text-white/85'}`}><Settings2 className="h-4 w-4 shrink-0" />{!isSidebarCollapsed && <span>Settings</span>}</button>
+          </div>
+        </aside>
+      )}
+
+      {activeTab !== 'reader' && (
+        <header className={`sticky top-0 z-30 flex h-[72px] items-center justify-between gap-4 border-b border-white/[0.06] bg-[#090A0F]/80 px-4 backdrop-blur-xl sm:px-6 ${isSidebarCollapsed ? 'lg:pl-[100px]' : 'lg:pl-[272px]'}`}>
+          <div className="min-w-0">
+            <p className="text-[8px] font-bold uppercase tracking-[0.2em] text-white/30">FMD2 STUDIO <span className="mx-1 text-white/15">/</span> {activeNavigationTab.toUpperCase().replace('-', ' ')}</p>
+            <h1 className="mt-1 truncate font-display text-sm font-bold tracking-tight text-white sm:text-base">{activeTab === 'series' ? 'Series details' : activeNavigationTab === 'home' ? 'Discover stories' : activeNavigationTab === 'catalog' || activeNavigationTab === 'browse' ? 'All titles' : activeNavigationTab === 'read-later' ? 'Read later' : activeNavigationTab === 'downloads' ? 'Downloads' : activeNavigationTab === 'reader' ? 'Reader' : activeNavigationTab === 'archivist' ? 'Archivist' : 'Settings'}</h1>
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <button type="button" onClick={() => setIsCommandPaletteOpen(true)} className="group flex h-9 items-center gap-2 rounded-lg border border-white/[0.08] bg-white/[0.025] px-3 text-white/45 transition-colors hover:border-violet-300/25 hover:text-white/85" aria-label="Search titles, authors, and users">
+              <Search className="h-3.5 w-3.5" /><span className="hidden text-[10px] sm:inline">Search anything</span><kbd className="hidden rounded border border-white/10 px-1 py-0.5 text-[8px] text-white/30 sm:inline">Ctrl K</kbd>
+            </button>
+            <button type="button" onClick={() => { setModalError(null); setShowUrlModal(true); }} className="inline-flex h-9 items-center gap-2 rounded-lg bg-violet-500 px-3 text-[10px] font-bold text-white transition-colors hover:bg-violet-400"><span className="text-base leading-none">+</span><span className="hidden sm:inline">Add series</span></button>
+          </div>
+        </header>
+      )}
+
       {/* Strict 3-Zone Top Bar Contract */}
-      <header className="flex items-center justify-between gap-8 px-6 py-3.5 border-b border-slate-800/80 bg-[#0B0F17]/95 sticky top-0 z-30 backdrop-blur-md">
+      <header className="hidden">
         {/* Zone 1: Single text element wordmark */}
         <a
           href="#browse"
@@ -1491,11 +1669,16 @@ export default function App() {
             type="button"
             onClick={() => setActiveTab('browse')}
             aria-keyshortcuts="b 1 2"
+            aria-current={
+              activeNavigationTab === 'browse' || activeNavigationTab === 'catalog'
+                ? 'page'
+                : undefined
+            }
             title="Browse Sources (Home)"
-            className={`py-1 transition-colors whitespace-nowrap shrink-0 cursor-pointer border-b-2 ${
-              activeTab === 'browse' || activeTab === 'catalog'
-                ? 'text-white border-indigo-500'
-                : 'border-transparent hover:text-white'
+            className={`studio-nav-tab py-1 transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+              activeNavigationTab === 'browse' || activeNavigationTab === 'catalog'
+                ? 'text-white'
+                : 'hover:text-white'
             }`}
           >
             Browse Sources
@@ -1504,12 +1687,13 @@ export default function App() {
             type="button"
             onClick={() => setActiveTab('read-later')}
             aria-keyshortcuts="l 7"
+            aria-current={activeNavigationTab === 'read-later' ? 'page' : undefined}
             title="Read Later Chapter Queue (Shortcut: L)"
             data-testid="nav-read-later-tab"
-            className={`py-1 transition-colors whitespace-nowrap shrink-0 tabular-nums cursor-pointer border-b-2 ${
-              activeTab === 'read-later'
-                ? 'text-white border-indigo-500'
-                : 'border-transparent hover:text-white'
+            className={`studio-nav-tab py-1 transition-colors whitespace-nowrap shrink-0 tabular-nums cursor-pointer ${
+              activeNavigationTab === 'read-later'
+                ? 'text-white'
+                : 'hover:text-white'
             }`}
           >
             Read Later ({readLaterQueue.length})
@@ -1518,11 +1702,12 @@ export default function App() {
             type="button"
             onClick={() => setActiveTab('downloads')}
             aria-keyshortcuts="d 3"
+            aria-current={activeNavigationTab === 'downloads' ? 'page' : undefined}
             title="Downloads (Shortcut: D)"
-            className={`py-1 transition-colors whitespace-nowrap shrink-0 tabular-nums cursor-pointer border-b-2 ${
-              activeTab === 'downloads'
-                ? 'text-white border-indigo-500'
-                : 'border-transparent hover:text-white'
+            className={`studio-nav-tab py-1 transition-colors whitespace-nowrap shrink-0 tabular-nums cursor-pointer ${
+              activeNavigationTab === 'downloads'
+                ? 'text-white'
+                : 'hover:text-white'
             }`}
           >
             Downloads ({queueStats.totalTasks})
@@ -1531,11 +1716,12 @@ export default function App() {
             type="button"
             onClick={() => setActiveTab('reader')}
             aria-keyshortcuts="r 4"
+            aria-current={activeNavigationTab === 'reader' ? 'page' : undefined}
             title="Manga Reader (Shortcut: R)"
-            className={`py-1 transition-colors whitespace-nowrap shrink-0 cursor-pointer border-b-2 ${
-              activeTab === 'reader'
-                ? 'text-white border-indigo-500'
-                : 'border-transparent hover:text-white'
+            className={`studio-nav-tab py-1 transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+              activeNavigationTab === 'reader'
+                ? 'text-white'
+                : 'hover:text-white'
             }`}
           >
             Manga Reader
@@ -1544,11 +1730,12 @@ export default function App() {
             type="button"
             onClick={() => setActiveTab('archivist')}
             aria-keyshortcuts="a 5"
+            aria-current={activeNavigationTab === 'archivist' ? 'page' : undefined}
             title="Archivist AI (Shortcut: A)"
-            className={`py-1 transition-colors whitespace-nowrap shrink-0 cursor-pointer border-b-2 ${
-              activeTab === 'archivist'
-                ? 'text-white border-indigo-500'
-                : 'border-transparent hover:text-white'
+            className={`studio-nav-tab py-1 transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+              activeNavigationTab === 'archivist'
+                ? 'text-white'
+                : 'hover:text-white'
             }`}
           >
             Archivist
@@ -1557,11 +1744,12 @@ export default function App() {
             type="button"
             onClick={() => setActiveTab('settings')}
             aria-keyshortcuts="s 6"
+            aria-current={activeNavigationTab === 'settings' ? 'page' : undefined}
             title="Settings (Shortcut: S)"
-            className={`py-1 transition-colors whitespace-nowrap shrink-0 tabular-nums cursor-pointer border-b-2 ${
-              activeTab === 'settings'
-                ? 'text-white border-indigo-500'
-                : 'border-transparent hover:text-white'
+            className={`studio-nav-tab py-1 transition-colors whitespace-nowrap shrink-0 tabular-nums cursor-pointer ${
+              activeNavigationTab === 'settings'
+                ? 'text-white'
+                : 'hover:text-white'
             }`}
           >
             Settings
@@ -1573,7 +1761,10 @@ export default function App() {
           {!IS_PACKAGED_RELEASE && (
             <button
               type="button"
-              onClick={() => setShowGitHubReleaseModal(true)}
+              onClick={() => {
+                setHasOpenedGitHubReleaseModal(true);
+                setShowGitHubReleaseModal(true);
+              }}
               className="px-3.5 py-2 text-xs font-semibold text-slate-200 hover:text-white bg-[#0F1523] hover:bg-slate-800 border border-slate-700 rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer"
             >
               Publish Release
@@ -1595,14 +1786,19 @@ export default function App() {
       {/* Mobile Navigation Bar */}
       <nav
         aria-label="Mobile Navigation"
-        className="flex flex-wrap md:hidden items-center justify-between gap-1 px-3 py-2 border-b border-slate-800/80 bg-[#0F1523] text-[11px] font-medium text-slate-400"
+        className="hidden"
       >
         <button
           type="button"
           onClick={() => setActiveTab('browse')}
           aria-keyshortcuts="b 1 2"
+          aria-current={
+            activeNavigationTab === 'browse' || activeNavigationTab === 'catalog'
+              ? 'page'
+              : undefined
+          }
           className={`px-2.5 py-1 rounded-md whitespace-nowrap shrink-0 ${
-            activeTab === 'browse' || activeTab === 'catalog'
+            activeNavigationTab === 'browse' || activeNavigationTab === 'catalog'
               ? 'bg-indigo-600 text-white'
               : 'hover:text-white'
           }`}
@@ -1613,8 +1809,9 @@ export default function App() {
           type="button"
           onClick={() => setActiveTab('read-later')}
           aria-keyshortcuts="l 7"
+          aria-current={activeNavigationTab === 'read-later' ? 'page' : undefined}
           className={`px-2.5 py-1 rounded-md tabular-nums whitespace-nowrap shrink-0 ${
-            activeTab === 'read-later' ? 'bg-indigo-600 text-white' : 'hover:text-white'
+            activeNavigationTab === 'read-later' ? 'bg-indigo-600 text-white' : 'hover:text-white'
           }`}
         >
           Read Later ({readLaterQueue.length})
@@ -1623,8 +1820,9 @@ export default function App() {
           type="button"
           onClick={() => setActiveTab('downloads')}
           aria-keyshortcuts="d 3"
+          aria-current={activeNavigationTab === 'downloads' ? 'page' : undefined}
           className={`px-2.5 py-1 rounded-md tabular-nums whitespace-nowrap shrink-0 ${
-            activeTab === 'downloads' ? 'bg-indigo-600 text-white' : 'hover:text-white'
+            activeNavigationTab === 'downloads' ? 'bg-indigo-600 text-white' : 'hover:text-white'
           }`}
         >
           Downloads ({queueStats.totalTasks})
@@ -1633,8 +1831,9 @@ export default function App() {
           type="button"
           onClick={() => setActiveTab('reader')}
           aria-keyshortcuts="r 4"
+          aria-current={activeNavigationTab === 'reader' ? 'page' : undefined}
           className={`px-2.5 py-1 rounded-md whitespace-nowrap shrink-0 ${
-            activeTab === 'reader' ? 'bg-indigo-600 text-white' : 'hover:text-white'
+            activeNavigationTab === 'reader' ? 'bg-indigo-600 text-white' : 'hover:text-white'
           }`}
         >
           Reader
@@ -1643,8 +1842,9 @@ export default function App() {
           type="button"
           onClick={() => setActiveTab('archivist')}
           aria-keyshortcuts="a 5"
+          aria-current={activeNavigationTab === 'archivist' ? 'page' : undefined}
           className={`px-2.5 py-1 rounded-md whitespace-nowrap shrink-0 ${
-            activeTab === 'archivist' ? 'bg-indigo-600 text-white' : 'hover:text-white'
+            activeNavigationTab === 'archivist' ? 'bg-indigo-600 text-white' : 'hover:text-white'
           }`}
         >
           Archivist
@@ -1653,8 +1853,9 @@ export default function App() {
           type="button"
           onClick={() => setActiveTab('settings')}
           aria-keyshortcuts="s 6"
+          aria-current={activeNavigationTab === 'settings' ? 'page' : undefined}
           className={`px-2.5 py-1 rounded-md whitespace-nowrap shrink-0 ${
-            activeTab === 'settings' ? 'bg-indigo-600 text-white' : 'hover:text-white'
+            activeNavigationTab === 'settings' ? 'bg-indigo-600 text-white' : 'hover:text-white'
           }`}
         >
           Settings
@@ -1663,11 +1864,9 @@ export default function App() {
 
       {/* Main Workspace Container */}
       <main
-        className={
-          activeTab === 'reader'
-            ? 'flex-1 w-full'
-            : 'flex-1 w-full max-w-[1360px] mx-auto px-4 sm:px-6 py-6'
-        }
+        className={activeTab === 'reader'
+          ? 'flex-1 w-full min-w-0'
+          : `min-h-[calc(100vh-72px)] w-full min-w-0 px-4 py-5 pb-28 sm:px-6 lg:px-8 lg:py-7 lg:pb-10 ${isSidebarCollapsed ? 'lg:ml-[76px] lg:w-[calc(100%-76px)]' : 'lg:ml-[248px] lg:w-[calc(100%-248px)]'}`}
       >
         {globalDownloadNotice && (
           <div
@@ -1697,6 +1896,15 @@ export default function App() {
           </div>
         )}
 
+        <React.Suspense fallback={<WorkspaceLoadingFallback />}>
+          <div
+            key={
+              activeTab === 'series'
+                ? `series-${activeSeriesPage?.id || 'empty'}`
+                : activeTab
+            }
+            className="animate-view-enter"
+          >
         {(activeTab === 'browse' || activeTab === 'catalog') && (
           <BrowseSourcesView
             catalog={catalog}
@@ -1728,6 +1936,21 @@ export default function App() {
             }}
             onInspectSeries={handleInspectSeries}
             onMergeLiveSeries={handleMergeLiveSeries}
+          />
+        )}
+
+        {activeTab === 'home' && (
+          <DiscoverHomeView
+            catalog={catalog}
+            recentlyReadEntries={recentlyReadEntries}
+            bookmarkedIds={bookmarkedIds}
+            isLoading={isInitialCatalogLoading}
+            onResumeSeries={handleResumeSeries}
+            onInspectSeries={handleInspectSeries}
+            onReadChapter={handleReadChapter}
+            onToggleBookmark={handleToggleBookmark}
+            onBrowseAll={() => setActiveTab('catalog')}
+            onOpenSearch={() => setIsCommandPaletteOpen(true)}
           />
         )}
 
@@ -1850,6 +2073,8 @@ export default function App() {
                 ? 'Back to Read Later Queue'
                 : seriesReturnTab === 'archivist'
                 ? 'Back to Archivist AI'
+                : seriesReturnTab === 'home'
+                ? 'Back to Discover'
                 : 'Back to Browse Sources'
             }
             onSelectSeries={handleInspectSeries}
@@ -1954,39 +2179,58 @@ export default function App() {
             onUpdateThemePrefs={handleUpdateThemePrefs}
           />
         )}
+          </div>
+        </React.Suspense>
       </main>
 
       {/* Quiet Minimal Footer */}
-      <footer className="border-t border-slate-800/80 py-6 px-6 text-xs text-slate-500 mt-12">
-        <div className="max-w-[1360px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+      <footer className={`border-t border-white/[0.06] bg-[#090A0F] py-6 px-6 text-[10px] text-white/30 ${activeTab === 'reader' ? 'hidden' : isSidebarCollapsed ? 'lg:ml-[76px] lg:w-[calc(100%-76px)]' : 'lg:ml-[248px] lg:w-[calc(100%-248px)]'}`}>
+        <div className="mx-auto flex max-w-[1500px] flex-col items-center justify-between gap-4 sm:flex-row">
           <div>
-            FMD2 Studio — Modern Web GUI for Free Manga Downloader & Multi-Source Reader
+            FMD2 Studio · your stories, all in one shelf
           </div>
-          <div className="flex items-center gap-4 font-mono">
-            <span>
-              Verified Live Sources: WeebCentral · Asura Scans · MangaDex · LikeManga.ink · MangaKatana ({enabledSources.length}/{ALL_FMD2_SOURCES.length} active)
-            </span>
+          <div className="flex items-center gap-2">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+            <span>{enabledSources.length} live sources connected</span>
           </div>
         </div>
       </footer>
 
+      {activeTab !== 'reader' && (
+        <nav aria-label="Mobile dock" className="fixed inset-x-3 bottom-3 z-50 grid grid-cols-5 rounded-2xl border border-white/10 bg-[#101118]/95 p-1.5 shadow-[0_14px_50px_rgba(0,0,0,.65)] backdrop-blur-xl lg:hidden">
+          {[
+            { label: 'Browse', icon: Home, action: () => navigateToHomeSection(), active: activeNavigationTab === 'home' },
+            { label: 'Catalog', icon: BookOpen, action: () => setActiveTab('catalog'), active: activeNavigationTab === 'catalog' || activeNavigationTab === 'browse' },
+            { label: 'Shelf', icon: Bookmark, action: () => setActiveTab('read-later'), active: activeNavigationTab === 'read-later' },
+            { label: 'Downloads', icon: Download, action: () => setActiveTab('downloads'), active: activeNavigationTab === 'downloads' },
+            { label: 'Search', icon: Search, action: () => setIsCommandPaletteOpen(true), active: false },
+          ].map(({ label, icon: Icon, action, active }) => (
+            <button key={label} type="button" onClick={action} aria-current={active ? 'page' : undefined} className={`flex min-w-0 flex-col items-center justify-center gap-1 rounded-xl py-2 text-[8px] font-semibold transition-colors ${active ? 'bg-violet-500/15 text-violet-100' : 'text-white/40 hover:text-white/80'}`}>
+              <Icon className="h-4 w-4" /><span>{label}</span>
+            </button>
+          ))}
+        </nav>
+      )}
+
       {/* Series Chapter Inspector Modal */}
       {inspectedSeries && (
-        <MangaDetailModal
-          series={inspectedSeries}
-          enabledSources={enabledSources}
-          engineConfig={engineConfig}
-          onUpdateEngineConfig={handleUpdateEngineConfig}
-          readingProgress={getSeriesReadingProgress(readingHistory, inspectedSeries)}
-          onResumeReading={handleResumeSeries}
-          existingTasks={downloadQueue}
-          isBookmarked={bookmarkedIds.includes(inspectedSeries.id)}
-          onToggleBookmark={handleToggleBookmark}
-          onClose={() => setInspectedSeries(null)}
-          onReadChapter={handleReadChapter}
-          onQueueChapters={handleQueueChapters}
-          onOpenDownloadsTab={() => setActiveTab('downloads')}
-        />
+        <React.Suspense fallback={<ModalLoadingFallback />}>
+          <MangaDetailModal
+            series={inspectedSeries}
+            enabledSources={enabledSources}
+            engineConfig={engineConfig}
+            onUpdateEngineConfig={handleUpdateEngineConfig}
+            readingProgress={getSeriesReadingProgress(readingHistory, inspectedSeries)}
+            onResumeReading={handleResumeSeries}
+            existingTasks={downloadQueue}
+            isBookmarked={bookmarkedIds.includes(inspectedSeries.id)}
+            onToggleBookmark={handleToggleBookmark}
+            onClose={() => setInspectedSeries(null)}
+            onReadChapter={handleReadChapter}
+            onQueueChapters={handleQueueChapters}
+            onOpenDownloadsTab={() => setActiveTab('downloads')}
+          />
+        </React.Suspense>
       )}
 
       {/* Paste Direct Manga URL Modal (Classic FMD2 Workflow) */}
@@ -2040,7 +2284,7 @@ export default function App() {
               <div className="flex items-center justify-between gap-4">
                 <div className="flex items-center gap-1.5">
                   <span className="text-xs text-slate-400">Archive Format:</span>
-                  {(['CBZ', 'PDF', 'EPUB', 'ZIP'] as ArchiveFormat[]).map((fmt) => (
+                  {(['CBZ', 'ZIP'] as ArchiveFormat[]).map((fmt) => (
                     <button
                       key={fmt}
                       type="button"
@@ -2478,9 +2722,27 @@ export default function App() {
         </div>
       )}
 
-      <GitHubReleaseModal
-        isOpen={showGitHubReleaseModal}
-        onClose={() => setShowGitHubReleaseModal(false)}
+      {hasOpenedGitHubReleaseModal && (
+        <React.Suspense
+          fallback={showGitHubReleaseModal ? <ModalLoadingFallback /> : null}
+        >
+          <GitHubReleaseModal
+            isOpen={showGitHubReleaseModal}
+            onClose={() => setShowGitHubReleaseModal(false)}
+          />
+        </React.Suspense>
+      )}
+
+      <CommandPalette
+        open={isCommandPaletteOpen}
+        catalog={catalog}
+        onClose={() => setIsCommandPaletteOpen(false)}
+        onInspectSeries={handleInspectSeries}
+        onSearchAuthor={(author) => {
+          setSearchQuery(author);
+          setLibraryFilter('all');
+          setActiveTab('catalog');
+        }}
       />
     </div>
   );

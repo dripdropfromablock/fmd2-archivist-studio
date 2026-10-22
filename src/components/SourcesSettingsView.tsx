@@ -227,9 +227,9 @@ export const SourcesSettingsView: React.FC<SourcesSettingsViewProps> = ({
   };
 
   return (
-    <div className="space-y-8 animate-view-enter">
+    <div className="space-y-8">
       {/* Top Header & Active Default Sources Summary */}
-      <section className="bg-[#0F1523] border border-slate-800 rounded-xl p-6 space-y-5">
+      <section className="bg-[#11121A] border border-white/[0.07] rounded-xl p-6 space-y-5">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="space-y-1">
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white font-display">
@@ -250,7 +250,7 @@ export const SourcesSettingsView: React.FC<SourcesSettingsViewProps> = ({
             <button
               type="button"
               onClick={handleResetToDefaultFive}
-              className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg border border-slate-700 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+              className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg border border-white/[0.1] transition-colors whitespace-nowrap shrink-0 cursor-pointer"
             >
               <RotateCcw className="w-3.5 h-3.5" />
               <span>Reset to 5 Default Sources</span>
@@ -258,7 +258,7 @@ export const SourcesSettingsView: React.FC<SourcesSettingsViewProps> = ({
             <button
               type="button"
               onClick={onBackToCatalog}
-              className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+              className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold bg-violet-600 hover:bg-violet-500 text-white rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
               <span>Back to Multi-Source Search</span>
@@ -267,9 +267,9 @@ export const SourcesSettingsView: React.FC<SourcesSettingsViewProps> = ({
         </div>
 
         {/* Active Sources Summary Strip */}
-        <div className="pt-4 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-4 text-xs">
+        <div className="pt-4 border-t border-white/[0.06] flex flex-wrap items-center justify-between gap-4 text-xs">
           <div className="flex flex-wrap items-center gap-2 text-slate-300">
-            <span className="font-mono text-indigo-400 tabular-nums font-semibold">
+            <span className="font-mono text-violet-400 tabular-nums font-semibold">
               {enabledSources.length} / {ALL_FMD2_SOURCES.length} Sources Enabled:
             </span>
             <span className="text-slate-400">
@@ -285,14 +285,14 @@ export const SourcesSettingsView: React.FC<SourcesSettingsViewProps> = ({
             <button
               type="button"
               onClick={handleEnablePopularEnglish}
-              className="px-3 py-1.5 text-xs font-medium bg-[#0B0F17] hover:bg-slate-900 text-slate-300 border border-slate-800 rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+              className="px-3 py-1.5 text-xs font-medium bg-[#090A0F] hover:bg-slate-900 text-slate-300 border border-white/[0.07] rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer"
             >
               Enable Top 25 English
             </button>
             <button
               type="button"
               onClick={handleEnableAllFiltered}
-              className="px-3 py-1.5 text-xs font-medium bg-[#0B0F17] hover:bg-slate-900 text-slate-300 border border-slate-800 rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+              className="px-3 py-1.5 text-xs font-medium bg-[#090A0F] hover:bg-slate-900 text-slate-300 border border-white/[0.07] rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer"
             >
               Enable Filtered ({filteredSources.length})
             </button>
@@ -300,7 +300,7 @@ export const SourcesSettingsView: React.FC<SourcesSettingsViewProps> = ({
               <button
                 type="button"
                 onClick={handleDisableFilteredOptional}
-                className="px-3 py-1.5 text-xs font-medium bg-[#0B0F17] hover:bg-slate-900 text-rose-300 border border-slate-800 rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+                className="px-3 py-1.5 text-xs font-medium bg-[#090A0F] hover:bg-slate-900 text-rose-300 border border-white/[0.07] rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer"
               >
                 Disable Optional ({enabledSources.length - DEFAULT_ENABLED_SOURCE_IDS.length})
               </button>
@@ -313,12 +313,12 @@ export const SourcesSettingsView: React.FC<SourcesSettingsViewProps> = ({
       {onUpdateThemePrefs && (
         <section
           aria-labelledby="studio-theme-heading"
-          className="bg-[#0F1523] border border-slate-800 rounded-xl p-6 space-y-6"
+          className="bg-[#11121A] border border-white/[0.07] rounded-xl p-6 space-y-6"
         >
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="space-y-1">
               <div className="flex items-center gap-2">
-                <Palette className="w-4 h-4 text-indigo-400 shrink-0" />
+                <Palette className="w-4 h-4 text-violet-400 shrink-0" />
                 <h2
                   id="studio-theme-heading"
                   className="text-lg font-bold text-white font-display"
@@ -334,7 +334,7 @@ export const SourcesSettingsView: React.FC<SourcesSettingsViewProps> = ({
             <button
               type="button"
               onClick={() => onUpdateThemePrefs(DEFAULT_UI_THEME_PREFS)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-[#0B0F17] hover:bg-slate-900 text-slate-300 border border-slate-800 rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-[#090A0F] hover:bg-slate-900 text-slate-300 border border-white/[0.07] rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer"
             >
               <RotateCcw className="w-3.5 h-3.5" />
               <span>Reset Appearance</span>
@@ -342,15 +342,15 @@ export const SourcesSettingsView: React.FC<SourcesSettingsViewProps> = ({
           </div>
 
           {/* Sleek Dropdown & Toggle Switch Grid for Studio Theme, Font, Accent, Motion & Surface */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-2 border-t border-slate-800/80 text-xs">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-2 border-t border-white/[0.06] text-xs">
             {/* 1. Studio Color Theme Dropdown */}
-            <div className="p-4 bg-[#0B0F17] border border-slate-800 rounded-xl space-y-2.5">
+            <div className="p-4 bg-[#090A0F] border border-white/[0.07] rounded-xl space-y-2.5">
               <div className="flex items-center justify-between">
                 <span className="font-semibold text-white flex items-center gap-1.5">
-                  <Palette className="w-3.5 h-3.5 text-indigo-400" />
+                  <Palette className="w-3.5 h-3.5 text-violet-400" />
                   <span>UI Color Theme</span>
                 </span>
-                <span className="text-[11px] font-mono text-indigo-400">
+                <span className="text-[11px] font-mono text-violet-400">
                   {APP_THEME_PRESETS.find((t) => t.id === themePrefs.themeId)?.mode}
                 </span>
               </div>
@@ -377,18 +377,18 @@ export const SourcesSettingsView: React.FC<SourcesSettingsViewProps> = ({
             </div>
 
             {/* 2. Apple Font Family Dropdown */}
-            <div className="p-4 bg-[#0B0F17] border border-slate-800 rounded-xl space-y-2.5">
+            <div className="p-4 bg-[#090A0F] border border-white/[0.07] rounded-xl space-y-2.5">
               <div className="flex items-center justify-between">
                 <span className="font-semibold text-white flex items-center gap-1.5">
-                  <Type className="w-3.5 h-3.5 text-indigo-400" />
+                  <Type className="w-3.5 h-3.5 text-violet-400" />
                   <span>Apple Font Family</span>
                 </span>
                 <span className="text-[11px] font-mono text-slate-400">Typography</span>
               </div>
-              <DropdownMenu<UiThemePreferences['fontFamily']>
+              <DropdownMenu<NonNullable<UiThemePreferences['fontFamily']>>
                 id="settings-apple-font-select"
                 ariaLabel="Select Apple Font Family"
-                value={themePrefs.fontFamily}
+                value={themePrefs.fontFamily ?? 'sf-pro'}
                 options={APPLE_FONT_PRESETS.map((font) => ({
                   value: font.id,
                   label: `${font.label} (${font.shortLabel})`,
@@ -405,7 +405,7 @@ export const SourcesSettingsView: React.FC<SourcesSettingsViewProps> = ({
             </div>
 
             {/* 3. Primary Accent Color Dropdown */}
-            <div className="p-4 bg-[#0B0F17] border border-slate-800 rounded-xl space-y-2.5">
+            <div className="p-4 bg-[#090A0F] border border-white/[0.07] rounded-xl space-y-2.5">
               <div className="flex items-center justify-between">
                 <span className="font-semibold text-white flex items-center gap-1.5">
                   <span
@@ -442,10 +442,10 @@ export const SourcesSettingsView: React.FC<SourcesSettingsViewProps> = ({
             </div>
 
             {/* 4. UI Animation & Motion Dropdown + 3D Card Hover Switch */}
-            <div className="p-4 bg-[#0B0F17] border border-slate-800 rounded-xl space-y-3">
+            <div className="p-4 bg-[#090A0F] border border-white/[0.07] rounded-xl space-y-3">
               <div className="flex items-center justify-between gap-2">
                 <span className="font-semibold text-white flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+                  <Sparkles className="w-3.5 h-3.5 text-violet-400" />
                   <span>Animation Curve</span>
                 </span>
                 <DropdownMenu<UiThemePreferences['animationStyle']>
@@ -463,7 +463,7 @@ export const SourcesSettingsView: React.FC<SourcesSettingsViewProps> = ({
                 />
               </div>
 
-              <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between gap-3">
+              <div className="pt-2 border-t border-white/[0.06] flex items-center justify-between gap-3">
                 <span className="text-slate-300 font-medium">
                   3D Card Hover Lift &amp; Cover Zoom
                 </span>
@@ -476,7 +476,7 @@ export const SourcesSettingsView: React.FC<SourcesSettingsViewProps> = ({
                     onUpdateThemePrefs({ cardHoverEffects: !themePrefs.cardHoverEffects })
                   }
                   className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors cursor-pointer ${
-                    themePrefs.cardHoverEffects ? 'bg-indigo-600' : 'bg-slate-700'
+                    themePrefs.cardHoverEffects ? 'bg-violet-600' : 'bg-slate-700'
                   }`}
                 >
                   <span
@@ -489,11 +489,11 @@ export const SourcesSettingsView: React.FC<SourcesSettingsViewProps> = ({
             </div>
 
             {/* 5. Surface Finish Dropdown + Ambient Studio Glow & Mouse Pointer Switches */}
-            <div className="p-4 bg-[#0B0F17] border border-slate-800 rounded-xl space-y-3 md:col-span-2">
+            <div className="p-4 bg-[#090A0F] border border-white/[0.07] rounded-xl space-y-3 md:col-span-2">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-center">
                 <div className="flex items-center justify-between gap-2">
                   <span className="font-semibold text-white flex items-center gap-1.5">
-                    <Layers className="w-3.5 h-3.5 text-indigo-400" />
+                    <Layers className="w-3.5 h-3.5 text-violet-400" />
                     <span>Surface Finish</span>
                   </span>
                   <DropdownMenu<UiThemePreferences['surfaceStyle']>
@@ -510,9 +510,9 @@ export const SourcesSettingsView: React.FC<SourcesSettingsViewProps> = ({
                   />
                 </div>
 
-                <div className="flex items-center justify-between gap-3 sm:pl-4 sm:border-l sm:border-slate-800/80">
+                <div className="flex items-center justify-between gap-3 sm:pl-4 sm:border-l sm:border-white/[0.06]">
                   <span className="text-slate-300 font-medium flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+                    <Sparkles className="w-3.5 h-3.5 text-violet-400" />
                     <span>Ambient Studio Glow</span>
                   </span>
                   <button
@@ -524,7 +524,7 @@ export const SourcesSettingsView: React.FC<SourcesSettingsViewProps> = ({
                       onUpdateThemePrefs({ ambientGlow: !themePrefs.ambientGlow })
                     }
                     className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors cursor-pointer ${
-                      themePrefs.ambientGlow ? 'bg-indigo-600' : 'bg-slate-700'
+                      themePrefs.ambientGlow ? 'bg-violet-600' : 'bg-slate-700'
                     }`}
                   >
                     <span
@@ -535,9 +535,9 @@ export const SourcesSettingsView: React.FC<SourcesSettingsViewProps> = ({
                   </button>
                 </div>
 
-                <div className="flex items-center justify-between gap-3 sm:pl-4 sm:border-l sm:border-slate-800/80">
+                <div className="flex items-center justify-between gap-3 sm:pl-4 sm:border-l sm:border-white/[0.06]">
                   <span className="text-slate-300 font-medium flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+                    <Sparkles className="w-3.5 h-3.5 text-violet-400" />
                     <span>Pointer &amp; Click Animations</span>
                   </span>
                   <button
@@ -551,7 +551,7 @@ export const SourcesSettingsView: React.FC<SourcesSettingsViewProps> = ({
                       })
                     }
                     className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors cursor-pointer ${
-                      themePrefs.cursorAnimation !== false ? 'bg-indigo-600' : 'bg-slate-700'
+                      themePrefs.cursorAnimation !== false ? 'bg-violet-600' : 'bg-slate-700'
                     }`}
                   >
                     <span
@@ -568,7 +568,7 @@ export const SourcesSettingsView: React.FC<SourcesSettingsViewProps> = ({
       )}
 
       {/* Search & Filter Controls for ~600 FMD2 Source Catalogue */}
-      <section className="bg-[#0F1523] border border-slate-800 rounded-xl p-6 space-y-5">
+      <section className="bg-[#11121A] border border-white/[0.07] rounded-xl p-6 space-y-5">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3 items-center">
           <div className="sm:col-span-2 lg:col-span-4 relative">
             <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -578,7 +578,7 @@ export const SourcesSettingsView: React.FC<SourcesSettingsViewProps> = ({
               value={sourceSearch}
               onChange={(e) => setSourceSearch(e.target.value)}
               placeholder={`Search all ${ALL_FMD2_SOURCES.length} FMD2 Lua sources by name, domain, or script...`}
-              className="w-full pl-10 pr-4 py-2 text-xs sm:text-sm bg-[#0B0F17] border border-slate-800 rounded-lg text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500 transition-colors"
+              className="w-full pl-10 pr-4 py-2 text-xs sm:text-sm bg-[#090A0F] border border-white/[0.07] rounded-lg text-white placeholder:text-slate-500 focus:outline-none focus:border-violet-500 transition-colors"
             />
           </div>
 
@@ -669,8 +669,8 @@ export const SourcesSettingsView: React.FC<SourcesSettingsViewProps> = ({
         </div>
 
         {/* High-Density FMD2 Lua Modules Table */}
-        <div className="border border-slate-800 rounded-xl overflow-hidden bg-[#0B0F17]">
-          <div className="px-4 py-3 border-b border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-400 bg-slate-900/40">
+        <div className="border border-white/[0.07] rounded-xl overflow-hidden bg-[#090A0F]">
+          <div className="px-4 py-3 border-b border-white/[0.07] flex flex-wrap items-center justify-between gap-3 text-xs text-slate-400 bg-slate-900/40">
             <span className="font-mono tabular-nums">
               Showing {displayedSources.length} of {filteredSources.length} matching FMD2 Lua Modules ({ALL_FMD2_SOURCES.length} total in repository)
             </span>
@@ -680,7 +680,7 @@ export const SourcesSettingsView: React.FC<SourcesSettingsViewProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowAllRows((v) => !v)}
-                  className="px-2.5 py-1 text-[11px] bg-slate-800 hover:bg-slate-700 text-slate-200 rounded border border-slate-700 cursor-pointer"
+                  className="px-2.5 py-1 text-[11px] bg-slate-800 hover:bg-slate-700 text-slate-200 rounded border border-white/[0.1] cursor-pointer"
                 >
                   {showAllRows ? `Paginate (${PAGE_SIZE}/page)` : `Show All ${filteredSources.length}`}
                 </button>
@@ -727,7 +727,7 @@ export const SourcesSettingsView: React.FC<SourcesSettingsViewProps> = ({
                   setLanguageFilter('All');
                   setStatusFilter('all');
                 }}
-                className="px-4 py-2 text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg"
+                className="px-4 py-2 text-xs font-semibold bg-violet-600 hover:bg-violet-500 text-white rounded-lg"
               >
                 Reset Catalogue Filters
               </button>
@@ -735,7 +735,7 @@ export const SourcesSettingsView: React.FC<SourcesSettingsViewProps> = ({
           ) : (
             <div className="overflow-x-auto max-h-[560px] overflow-y-auto">
               <table className="w-full text-left border-collapse">
-                <thead className="sticky top-0 z-10 bg-[#0B0F17] border-b border-slate-800 text-[11px] font-mono text-slate-400">
+                <thead className="sticky top-0 z-10 bg-[#090A0F] border-b border-white/[0.07] text-[11px] font-mono text-slate-400">
                   <tr>
                     <th className="py-3 px-4 w-14">STATE</th>
                     <th className="py-3 px-4">SOURCE WEBSITE &amp; DOMAIN</th>
@@ -754,19 +754,25 @@ export const SourcesSettingsView: React.FC<SourcesSettingsViewProps> = ({
                         key={src.id}
                         className={`transition-colors ${
                           isEnabled
-                            ? 'bg-indigo-950/15 hover:bg-indigo-950/25'
+                            ? 'bg-violet-950/15 hover:bg-violet-950/25'
                             : 'hover:bg-slate-900/50'
                         }`}
                       >
                         <td className="py-3 px-4">
                           <button
                             type="button"
+                            disabled={!isDefaultFive}
                             onClick={() => onToggleSource(src.id)}
-                            aria-label={`${isEnabled ? 'Disable' : 'Enable'} ${src.name}`}
-                            className="text-slate-400 hover:text-indigo-400 cursor-pointer"
+                            aria-label={
+                              isDefaultFive
+                                ? `${isEnabled ? 'Disable' : 'Enable'} ${src.name}`
+                                : `${src.name} has no live scraper yet`
+                            }
+                            title={isDefaultFive ? undefined : 'Connector metadata only; no live scraper is implemented yet'}
+                            className="text-slate-400 hover:text-violet-400 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
                           >
                             {isEnabled ? (
-                              <CheckSquare className="w-4 h-4 text-indigo-400" />
+                              <CheckSquare className="w-4 h-4 text-violet-400" />
                             ) : (
                               <Square className="w-4 h-4 text-slate-600" />
                             )}
@@ -776,8 +782,13 @@ export const SourcesSettingsView: React.FC<SourcesSettingsViewProps> = ({
                           <div className="font-semibold text-white flex items-center gap-2">
                             <span>{src.name}</span>
                             {isDefaultFive && (
-                              <span className="text-[11px] font-mono text-indigo-400 font-normal">
-                                · Default Primary
+                              <span className="text-[11px] font-mono text-violet-400 font-normal">
+                                · Live Adapter
+                              </span>
+                            )}
+                            {!isDefaultFive && (
+                              <span className="text-[10px] font-mono text-slate-500 font-normal">
+                                · Descriptor Only
                               </span>
                             )}
                           </div>
@@ -803,9 +814,16 @@ export const SourcesSettingsView: React.FC<SourcesSettingsViewProps> = ({
                             type="button"
                             role="switch"
                             aria-checked={isEnabled}
+                            aria-disabled={!isDefaultFive}
+                            disabled={!isDefaultFive}
                             onClick={() => onToggleSource(src.id)}
-                            aria-label={`${isEnabled ? 'Disable' : 'Enable'} ${src.name} source`}
-                            className="inline-flex items-center gap-2 cursor-pointer"
+                            aria-label={
+                              isDefaultFive
+                                ? `${isEnabled ? 'Disable' : 'Enable'} ${src.name} source`
+                                : `${src.name} has no live scraper yet`
+                            }
+                            title={isDefaultFive ? undefined : 'Connector metadata only; no live scraper is implemented yet'}
+                            className="inline-flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
                           >
                             <span className="text-[11px] font-mono text-slate-400">
                               {isEnabled ? 'ON' : 'OFF'}
@@ -813,7 +831,7 @@ export const SourcesSettingsView: React.FC<SourcesSettingsViewProps> = ({
                             <span
                               aria-hidden="true"
                               className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${
-                                isEnabled ? 'bg-indigo-600' : 'bg-slate-700'
+                                isEnabled ? 'bg-violet-600' : 'bg-slate-700'
                               }`}
                             >
                               <span
@@ -837,12 +855,12 @@ export const SourcesSettingsView: React.FC<SourcesSettingsViewProps> = ({
       {/* Automatic Reader Mode Detection (Genre & Metadata Tags) */}
       <section
         aria-labelledby="auto-reader-mode-heading"
-        className="bg-[#0F1523] border border-slate-800 rounded-xl p-6 space-y-5"
+        className="bg-[#11121A] border border-white/[0.07] rounded-xl p-6 space-y-5"
       >
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <BookOpen className="w-4 h-4 text-indigo-400 shrink-0" />
+              <BookOpen className="w-4 h-4 text-violet-400 shrink-0" />
               <h2
                 id="auto-reader-mode-heading"
                 className="text-lg font-bold text-white font-display"
@@ -864,13 +882,13 @@ export const SourcesSettingsView: React.FC<SourcesSettingsViewProps> = ({
               onClick={handleToggleAutoDetectMode}
               className={`flex items-center gap-2.5 px-4 py-2 text-xs font-semibold rounded-lg border transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
                 autoDetectReadingMode
-                  ? 'bg-indigo-600/20 border-indigo-500/70 text-indigo-200 hover:bg-indigo-600/30'
-                  : 'bg-[#0B0F17] border-slate-800 text-slate-400 hover:text-slate-200'
+                  ? 'bg-violet-600/20 border-violet-500/70 text-violet-200 hover:bg-violet-600/30'
+                  : 'bg-[#090A0F] border-white/[0.07] text-slate-400 hover:text-slate-200'
               }`}
             >
               <span
                 className={`w-8 h-4 rounded-full relative transition-colors inline-flex items-center p-0.5 ${
-                  autoDetectReadingMode ? 'bg-indigo-500' : 'bg-slate-700'
+                  autoDetectReadingMode ? 'bg-violet-500' : 'bg-slate-700'
                 }`}
               >
                 <span
@@ -887,7 +905,7 @@ export const SourcesSettingsView: React.FC<SourcesSettingsViewProps> = ({
             <button
               type="button"
               onClick={handleResetTriggerTags}
-              className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium bg-[#0B0F17] hover:bg-slate-900 text-slate-300 border border-slate-800 rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium bg-[#090A0F] hover:bg-slate-900 text-slate-300 border border-white/[0.07] rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer"
             >
               <RotateCcw className="w-3.5 h-3.5" />
               <span>Reset Tag Rules</span>
@@ -897,13 +915,13 @@ export const SourcesSettingsView: React.FC<SourcesSettingsViewProps> = ({
 
         {/* Rule Mapping & Fallback Mode Row */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 pt-2">
-          <div className="p-4 bg-[#0B0F17] border border-slate-800 rounded-lg space-y-2">
+          <div className="p-4 bg-[#090A0F] border border-white/[0.07] rounded-lg space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-white flex items-center gap-1.5">
-                <FileText className="w-3.5 h-3.5 text-indigo-400" />
+                <FileText className="w-3.5 h-3.5 text-violet-400" />
                 <span>Traditional Manga Rule</span>
               </span>
-              <span className="text-[11px] font-mono text-indigo-400">
+              <span className="text-[11px] font-mono text-violet-400">
                 → Page-by-Page (RTL)
               </span>
             </div>
@@ -912,7 +930,7 @@ export const SourcesSettingsView: React.FC<SourcesSettingsViewProps> = ({
             </p>
           </div>
 
-          <div className="p-4 bg-[#0B0F17] border border-slate-800 rounded-lg space-y-2">
+          <div className="p-4 bg-[#090A0F] border border-white/[0.07] rounded-lg space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-white flex items-center gap-1.5">
                 <ScrollText className="w-3.5 h-3.5 text-emerald-400" />
@@ -927,7 +945,7 @@ export const SourcesSettingsView: React.FC<SourcesSettingsViewProps> = ({
             </p>
           </div>
 
-          <div className="p-4 bg-[#0B0F17] border border-slate-800 rounded-lg space-y-2">
+          <div className="p-4 bg-[#090A0F] border border-white/[0.07] rounded-lg space-y-2">
             <span className="block text-xs font-semibold text-white">
               Fallback Reader Mode (When Auto-Toggle is OFF)
             </span>
@@ -956,7 +974,7 @@ export const SourcesSettingsView: React.FC<SourcesSettingsViewProps> = ({
         </div>
 
         {/* Interactive Genre & Metadata Trigger Tags Configuration */}
-        <div className="p-4 bg-[#0B0F17] border border-slate-800 rounded-lg space-y-3">
+        <div className="p-4 bg-[#090A0F] border border-white/[0.07] rounded-lg space-y-3">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
               <div className="text-xs font-semibold text-white">
@@ -980,11 +998,11 @@ export const SourcesSettingsView: React.FC<SourcesSettingsViewProps> = ({
                 value={customTagInput}
                 onChange={(e) => setCustomTagInput(e.target.value)}
                 placeholder="Add genre/tag (e.g. Cyberpunk)..."
-                className="px-3 py-1.5 text-xs font-mono bg-[#0F1523] border border-slate-800 rounded-lg text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500 flex-1 sm:w-48 min-w-0"
+                className="px-3 py-1.5 text-xs font-mono bg-[#11121A] border border-white/[0.07] rounded-lg text-white placeholder:text-slate-500 focus:outline-none focus:border-violet-500 flex-1 sm:w-48 min-w-0"
               />
               <button
                 type="submit"
-                className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition-colors whitespace-nowrap shrink-0"
+                className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold bg-violet-600 hover:bg-violet-500 text-white rounded-lg transition-colors whitespace-nowrap shrink-0"
               >
                 <Plus className="w-3.5 h-3.5" />
                 <span>Add Tag</span>
@@ -1016,7 +1034,7 @@ export const SourcesSettingsView: React.FC<SourcesSettingsViewProps> = ({
                   className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-mono rounded-md border transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
                     isSelected
                       ? 'bg-emerald-950/40 border-emerald-500/60 text-emerald-300 hover:bg-emerald-950/60'
-                      : 'bg-[#0F1523] border-slate-800 text-slate-400 hover:text-slate-200'
+                      : 'bg-[#11121A] border-white/[0.07] text-slate-400 hover:text-slate-200'
                   }`}
                 >
                   <span>{tag}</span>
@@ -1047,7 +1065,7 @@ export const SourcesSettingsView: React.FC<SourcesSettingsViewProps> = ({
                 return (
                   <div
                     key={item.id}
-                    className="p-3 bg-[#0B0F17] border border-slate-800 rounded-lg flex flex-col justify-between gap-2.5"
+                    className="p-3 bg-[#090A0F] border border-white/[0.07] rounded-lg flex flex-col justify-between gap-2.5"
                   >
                     <div className="space-y-1">
                       <div className="flex items-center justify-between gap-2">
@@ -1056,7 +1074,7 @@ export const SourcesSettingsView: React.FC<SourcesSettingsViewProps> = ({
                         </span>
                         <span
                           className={`text-[11px] font-mono whitespace-nowrap shrink-0 ${
-                            res.mode === 'webtoon' ? 'text-emerald-400' : 'text-indigo-400'
+                            res.mode === 'webtoon' ? 'text-emerald-400' : 'text-violet-400'
                           }`}
                         >
                           {res.mode === 'webtoon'
@@ -1080,7 +1098,7 @@ export const SourcesSettingsView: React.FC<SourcesSettingsViewProps> = ({
                       <button
                         type="button"
                         onClick={() => onOpenSeriesInReader(item, firstChap)}
-                        className="w-full py-1.5 px-2.5 text-xs font-medium bg-slate-800/80 hover:bg-indigo-600 text-slate-200 hover:text-white rounded-md transition-colors text-center whitespace-nowrap"
+                        className="w-full py-1.5 px-2.5 text-xs font-medium bg-slate-800/80 hover:bg-violet-600 text-slate-200 hover:text-white rounded-md transition-colors text-center whitespace-nowrap"
                       >
                         Test {item.title} in Reader
                       </button>
@@ -1094,16 +1112,16 @@ export const SourcesSettingsView: React.FC<SourcesSettingsViewProps> = ({
       </section>
 
       {/* Downloader Engine Global Preferences */}
-      <section className="bg-[#0F1523] border border-slate-800 rounded-xl p-6 space-y-4">
+      <section className="bg-[#11121A] border border-white/[0.07] rounded-xl p-6 space-y-4">
         <div className="flex items-center gap-2.5">
-          <SlidersHorizontal className="w-4 h-4 text-indigo-400" />
+          <SlidersHorizontal className="w-4 h-4 text-violet-400" />
           <h2 className="text-base font-bold text-white font-display">
             FMD2 Downloader Engine &amp; Archive Defaults
           </h2>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2 text-xs">
-          <div className="p-4 bg-[#0B0F17] border border-slate-800 rounded-lg space-y-2">
+          <div className="p-4 bg-[#090A0F] border border-white/[0.07] rounded-lg space-y-2">
             <span className="block text-slate-400">
               Default Container Format
             </span>
@@ -1111,7 +1129,7 @@ export const SourcesSettingsView: React.FC<SourcesSettingsViewProps> = ({
               id="settings-default-format"
               ariaLabel="Default Container Format"
               value={engineConfig.defaultFormat}
-              options={(['CBZ', 'PDF', 'EPUB', 'ZIP', 'FOLDER'] as ArchiveFormat[]).map((fmt) => ({
+              options={(['CBZ', 'ZIP'] as ArchiveFormat[]).map((fmt) => ({
                 value: fmt,
                 label: `${fmt} Archive`,
               }))}
@@ -1122,7 +1140,7 @@ export const SourcesSettingsView: React.FC<SourcesSettingsViewProps> = ({
             />
           </div>
 
-          <div className="p-4 bg-[#0B0F17] border border-slate-800 rounded-lg space-y-2">
+          <div className="p-4 bg-[#090A0F] border border-white/[0.07] rounded-lg space-y-2">
             <span className="block text-slate-400">
               Concurrent Chapter Workers
             </span>
@@ -1141,7 +1159,7 @@ export const SourcesSettingsView: React.FC<SourcesSettingsViewProps> = ({
             />
           </div>
 
-          <div className="p-4 bg-[#0B0F17] border border-slate-800 rounded-lg space-y-2">
+          <div className="p-4 bg-[#090A0F] border border-white/[0.07] rounded-lg space-y-2">
             <span className="block text-slate-400">
               Image Fetch Threads per Chapter
             </span>

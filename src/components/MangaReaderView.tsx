@@ -658,7 +658,7 @@ export const MangaReaderView: React.FC<MangaReaderViewProps> = ({
           style={{ filter: opticalFilterCss !== 'none' ? opticalFilterCss : undefined }}
           className={`relative w-full overflow-hidden ${
             isPaginated ? 'min-h-[420px] flex items-center justify-center' : ''
-          } ${seamless ? 'rounded-none border-0' : 'rounded border border-slate-800/60'}`}
+          } ${seamless ? 'rounded-none border-0' : 'rounded border border-white/[0.07]/60'}`}
         >
           <img
             src={liveUrl}
@@ -680,11 +680,11 @@ export const MangaReaderView: React.FC<MangaReaderViewProps> = ({
     if (loadingLivePages && livePageUrls.length === 0) {
       return (
         <div
-          className={`w-full aspect-[3/4.3] max-h-[80vh] bg-[#0B0F17]/90 border border-slate-800/60 flex flex-col items-center justify-center gap-3 p-6 text-slate-400 ${
+          className={`skeleton-shimmer w-full aspect-[3/4.3] max-h-[80vh] bg-[#090A0F]/90 border border-white/[0.06] flex flex-col items-center justify-center gap-3 p-6 text-slate-400 ${
             seamless ? 'rounded-none border-x-0 border-t-0' : 'rounded-lg'
           }`}
         >
-          <RefreshCw className="w-6 h-6 text-indigo-400 animate-spin" />
+          <RefreshCw className="w-6 h-6 text-violet-400 animate-spin" />
           <div className="text-xs font-mono text-center">
             Loading {series.title} · Ch. {chapter.number} (Page {pageNum} / {totalPages})...
           </div>
@@ -694,7 +694,7 @@ export const MangaReaderView: React.FC<MangaReaderViewProps> = ({
 
     return (
       <div
-        className={`w-full aspect-[3/4.3] max-h-[80vh] bg-[#0B0F17] border border-slate-800/80 flex flex-col items-center justify-center gap-3 p-6 text-slate-400 ${
+        className={`w-full aspect-[3/4.3] max-h-[80vh] bg-[#090A0F] border border-white/[0.06] flex flex-col items-center justify-center gap-3 p-6 text-slate-400 ${
           seamless ? 'rounded-none border-x-0 border-t-0' : 'rounded-lg'
         }`}
       >
@@ -714,7 +714,7 @@ export const MangaReaderView: React.FC<MangaReaderViewProps> = ({
               return next;
             });
           }}
-          className="px-3 py-1.5 text-xs font-mono bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg border border-slate-700 transition-colors cursor-pointer"
+          className="px-3 py-1.5 text-xs font-mono bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg border border-white/[0.1] transition-colors cursor-pointer"
         >
           Retry Page {pageNum}
         </button>
@@ -760,7 +760,7 @@ export const MangaReaderView: React.FC<MangaReaderViewProps> = ({
         <div
           role="region"
           aria-label="Comix Reader Toolbar"
-          className="sticky top-0 z-30 min-h-12 py-1.5 px-3 sm:px-5 bg-[#090D16]/95 backdrop-blur-md border-b border-slate-800/80 flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5 text-xs"
+          className="sticky top-0 z-30 min-h-12 py-1.5 px-3 sm:px-5 bg-[#090D16]/95 backdrop-blur-md border-b border-white/[0.06] flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5 text-xs"
         >
           {/* Left Cluster: Back to Manga Page + Series Switcher or Title */}
           <div className="flex items-center gap-2 min-w-0 shrink-0">
@@ -769,7 +769,7 @@ export const MangaReaderView: React.FC<MangaReaderViewProps> = ({
               onClick={() => (onOpenSeriesPage ? onOpenSeriesPage(series) : onExitReader())}
               aria-label="Back to Manga Page"
               title={`Open ${series.title} Main Manga Page`}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 text-slate-300 hover:text-white bg-slate-900/90 hover:bg-slate-800 border border-slate-800 rounded-md transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 text-slate-300 hover:text-white bg-slate-900/90 hover:bg-slate-800 border border-white/[0.07] rounded-md transition-colors whitespace-nowrap shrink-0 cursor-pointer"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
               <span className="hidden sm:inline font-medium">Manga Page</span>
@@ -809,7 +809,7 @@ export const MangaReaderView: React.FC<MangaReaderViewProps> = ({
                     type="button"
                     onClick={() => onOpenSeriesPage(series)}
                     title={`View ${series.title} Main Manga Page & Chapter List`}
-                    className="hidden lg:inline-block xl:hidden font-bold text-white hover:text-indigo-400 font-display truncate max-w-[160px] transition-colors cursor-pointer"
+                    className="hidden lg:inline-block xl:hidden font-bold text-white hover:text-violet-400 font-display truncate max-w-[160px] transition-colors cursor-pointer"
                   >
                     {series.title}
                   </button>
@@ -820,7 +820,7 @@ export const MangaReaderView: React.FC<MangaReaderViewProps> = ({
                 type="button"
                 onClick={() => onOpenSeriesPage(series)}
                 title={`View ${series.title} Main Manga Page & Chapter List`}
-                className="hidden lg:inline-block font-bold text-white hover:text-indigo-400 font-display truncate max-w-[180px] transition-colors cursor-pointer"
+                className="hidden lg:inline-block font-bold text-white hover:text-violet-400 font-display truncate max-w-[180px] transition-colors cursor-pointer"
               >
                 {series.title}
               </button>
@@ -839,7 +839,7 @@ export const MangaReaderView: React.FC<MangaReaderViewProps> = ({
               onClick={() => prevChapter && onSelectChapter(prevChapter)}
               aria-label="Previous Chapter"
               title={prevChapter ? `Previous: Ch. ${prevChapter.number}` : 'First Chapter'}
-              className="p-1.5 text-slate-300 hover:text-white disabled:opacity-35 bg-slate-900/90 hover:bg-slate-800 border border-slate-800 rounded-md transition-colors shrink-0 cursor-pointer"
+              className="p-1.5 text-slate-300 hover:text-white disabled:opacity-35 bg-slate-900/90 hover:bg-slate-800 border border-white/[0.07] rounded-md transition-colors shrink-0 cursor-pointer"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
@@ -873,7 +873,7 @@ export const MangaReaderView: React.FC<MangaReaderViewProps> = ({
               onClick={() => nextChapter && onSelectChapter(nextChapter)}
               aria-label="Next Chapter"
               title={nextChapter ? `Next: Ch. ${nextChapter.number}` : 'Latest Chapter'}
-              className="p-1.5 text-slate-300 hover:text-white disabled:opacity-35 bg-slate-900/90 hover:bg-slate-800 border border-slate-800 rounded-md transition-colors shrink-0 cursor-pointer"
+              className="p-1.5 text-slate-300 hover:text-white disabled:opacity-35 bg-slate-900/90 hover:bg-slate-800 border border-white/[0.07] rounded-md transition-colors shrink-0 cursor-pointer"
             >
               <ChevronRight className="w-4 h-4" />
             </button>
@@ -945,7 +945,7 @@ export const MangaReaderView: React.FC<MangaReaderViewProps> = ({
                 onClick={() => setAutoScrollPlaying((prev) => !prev)}
                 aria-label={autoScrollPlaying ? 'Pause Auto-Scroll' : 'Start Auto-Scroll'}
                 title="Toggle Auto-Scroll (Spacebar)"
-                className="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border bg-slate-900/90 border-slate-800 text-slate-200 hover:text-white transition-colors cursor-pointer"
+                className="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border bg-slate-900/90 border-white/[0.07] text-slate-200 hover:text-white transition-colors cursor-pointer"
               >
                 <span className="text-[11px] font-medium">Auto-Scroll</span>
                 <span
@@ -983,13 +983,13 @@ export const MangaReaderView: React.FC<MangaReaderViewProps> = ({
                 className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold rounded-md border transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
                   isCurrentChapterInReadLater
                     ? 'bg-amber-500/20 hover:bg-amber-500/30 border-amber-500/70 text-amber-200'
-                    : 'bg-slate-900/90 hover:bg-slate-800 border-slate-800 text-slate-200 hover:text-white'
+                    : 'bg-slate-900/90 hover:bg-slate-800 border-white/[0.07] text-slate-200 hover:text-white'
                 }`}
               >
                 {isCurrentChapterInReadLater ? (
                   <Check className="w-3.5 h-3.5 text-amber-400" />
                 ) : (
-                  <BookmarkPlus className="w-3.5 h-3.5 text-indigo-400" />
+                  <BookmarkPlus className="w-3.5 h-3.5 text-violet-400" />
                 )}
                 <span>
                   {isCurrentChapterInReadLater ? 'In Read Later' : 'Read Later'}
@@ -1018,7 +1018,7 @@ export const MangaReaderView: React.FC<MangaReaderViewProps> = ({
               onClick={() => setHeaderHidden(true)}
               aria-label="Hide Reader Header"
               title="Hide Header Bar (Hotkey: H)"
-              className="p-1.5 text-slate-400 hover:text-white bg-slate-900/90 hover:bg-slate-800 border border-slate-800 rounded-md transition-colors cursor-pointer"
+              className="p-1.5 text-slate-400 hover:text-white bg-slate-900/90 hover:bg-slate-800 border border-white/[0.07] rounded-md transition-colors cursor-pointer"
             >
               <EyeOff className="w-3.5 h-3.5" />
             </button>
@@ -1029,7 +1029,7 @@ export const MangaReaderView: React.FC<MangaReaderViewProps> = ({
               onClick={toggleFullscreen}
               aria-label="Toggle Fullscreen"
               title="Toggle Fullscreen (Hotkey: F)"
-              className="hidden sm:inline-flex p-1.5 text-slate-400 hover:text-white bg-slate-900/90 hover:bg-slate-800 border border-slate-800 rounded-md transition-colors cursor-pointer"
+              className="hidden sm:inline-flex p-1.5 text-slate-400 hover:text-white bg-slate-900/90 hover:bg-slate-800 border border-white/[0.07] rounded-md transition-colors cursor-pointer"
             >
               {isFullscreen ? (
                 <Minimize2 className="w-3.5 h-3.5" />
@@ -1047,8 +1047,8 @@ export const MangaReaderView: React.FC<MangaReaderViewProps> = ({
               title="Reader Settings (Hotkey: S)"
               className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold rounded-md border transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
                 showSettingsDrawer
-                  ? 'bg-indigo-600 border-indigo-500 text-white'
-                  : 'bg-slate-900/90 hover:bg-slate-800 border-slate-800 text-slate-200 hover:text-white'
+                  ? 'bg-violet-600 border-violet-500 text-white'
+                  : 'bg-slate-900/90 hover:bg-slate-800 border-white/[0.07] text-slate-200 hover:text-white'
               }`}
             >
               <Settings className="w-3.5 h-3.5" />
@@ -1058,7 +1058,7 @@ export const MangaReaderView: React.FC<MangaReaderViewProps> = ({
         </div>
       ) : (
         /* Floating Minimal Restore Pill when Header is Hidden (Comix.to Full-Bleed Mode) */
-        <div className="fixed top-3 right-4 z-40 flex items-center gap-1.5 bg-[#090D16]/90 backdrop-blur-md border border-slate-800 rounded-lg px-2.5 py-1.5 shadow-xl text-xs font-mono">
+        <div className="fixed top-3 right-4 z-40 flex items-center gap-1.5 bg-[#090D16]/90 backdrop-blur-md border border-white/[0.07] rounded-lg px-2.5 py-1.5 shadow-xl text-xs font-mono">
           <span className="text-slate-300 tabular-nums">
             Ch. {chapter.number} · {activePageNumber}/{totalPages}
           </span>
@@ -1075,7 +1075,7 @@ export const MangaReaderView: React.FC<MangaReaderViewProps> = ({
             type="button"
             onClick={() => setShowSettingsDrawer(true)}
             aria-label="Reader Settings"
-            className="p-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded transition-colors cursor-pointer"
+            className="p-1 bg-violet-600 hover:bg-violet-500 text-white rounded transition-colors cursor-pointer"
           >
             <Settings className="w-3 h-3" />
           </button>
@@ -1126,9 +1126,9 @@ export const MangaReaderView: React.FC<MangaReaderViewProps> = ({
                 title={`Page ${pNum} / {totalPages}`}
                 className={`flex-1 w-full rounded-full transition-colors cursor-pointer ${
                   isCurrent
-                    ? 'bg-indigo-500'
+                    ? 'bg-violet-500'
                     : isPassed
-                    ? 'bg-indigo-500/45 hover:bg-indigo-400'
+                    ? 'bg-violet-500/45 hover:bg-violet-400'
                     : 'bg-slate-800/80 hover:bg-slate-600'
                 }`}
               />
@@ -1229,7 +1229,7 @@ export const MangaReaderView: React.FC<MangaReaderViewProps> = ({
                 }}
                 aria-label={leftLabel}
                 title={`${leftLabel} (${direction.toUpperCase()})`}
-                className="opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity absolute left-2 top-1/2 -translate-y-1/2 z-10 p-2.5 rounded-full bg-slate-950/75 hover:bg-indigo-600 text-white border border-slate-700/70 shadow-lg cursor-pointer"
+                className="opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity absolute left-2 top-1/2 -translate-y-1/2 z-10 p-2.5 rounded-full bg-slate-950/75 hover:bg-violet-600 text-white border border-white/[0.1]/70 shadow-lg cursor-pointer"
               >
                 <ChevronLeft className="w-5 h-5" />
               </button>
@@ -1239,7 +1239,7 @@ export const MangaReaderView: React.FC<MangaReaderViewProps> = ({
                   key={pageNum}
                   className={`relative ${
                     displayPages.length === 2 && idx === 0
-                      ? 'lg:border-r lg:border-slate-800/80'
+                      ? 'lg:border-r lg:border-white/[0.06]'
                       : ''
                   }`}
                 >
@@ -1257,7 +1257,7 @@ export const MangaReaderView: React.FC<MangaReaderViewProps> = ({
                 }}
                 aria-label={rightLabel}
                 title={`${rightLabel} (${direction.toUpperCase()})`}
-                className="opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity absolute right-2 top-1/2 -translate-y-1/2 z-10 p-2.5 rounded-full bg-slate-950/75 hover:bg-indigo-600 text-white border border-slate-700/70 shadow-lg cursor-pointer"
+                className="opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity absolute right-2 top-1/2 -translate-y-1/2 z-10 p-2.5 rounded-full bg-slate-950/75 hover:bg-violet-600 text-white border border-white/[0.1]/70 shadow-lg cursor-pointer"
               >
                 <ChevronRight className="w-5 h-5" />
               </button>
@@ -1278,12 +1278,12 @@ export const MangaReaderView: React.FC<MangaReaderViewProps> = ({
           className="w-full mx-auto mt-6 mb-8 px-4"
           style={{ maxWidth: getStageMaxWidthStyle() }}
         >
-          <div className="bg-[#0B0F17]/95 border border-slate-800/90 rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="bg-[#090A0F]/95 border border-white/[0.07]/90 rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
             <button
               type="button"
               disabled={!prevChapter}
               onClick={() => prevChapter && onSelectChapter(prevChapter)}
-              className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-medium bg-[#0F1523] hover:bg-slate-800 disabled:opacity-40 text-slate-200 border border-slate-800 rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+              className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-medium bg-[#11121A] hover:bg-slate-800 disabled:opacity-40 text-slate-200 border border-white/[0.07] rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer"
             >
               <ChevronLeft className="w-4 h-4" />
               <span>{prevChapter ? `Prev: Ch. ${prevChapter.number}` : 'First Chapter'}</span>
@@ -1296,7 +1296,7 @@ export const MangaReaderView: React.FC<MangaReaderViewProps> = ({
               <span aria-hidden="true"> · </span>
               <span>{getComixModeShortName(readingMode)}</span>
               {loadingLivePages ? (
-                <span className="text-indigo-400"> · Loading...</span>
+                <span className="text-violet-400"> · Loading...</span>
               ) : (
                 <span className="text-emerald-400">
                   {' '}
@@ -1318,7 +1318,7 @@ export const MangaReaderView: React.FC<MangaReaderViewProps> = ({
                   className={`flex items-center justify-center gap-1.5 px-3.5 py-2.5 text-xs font-semibold rounded-lg border transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
                     (nextChapter ? isNextChapterInReadLater : isCurrentChapterInReadLater)
                       ? 'bg-amber-500/20 border-amber-500/70 text-amber-200'
-                      : 'bg-[#0F1523] hover:bg-slate-800 border-slate-800 text-slate-200'
+                      : 'bg-[#11121A] hover:bg-slate-800 border-white/[0.07] text-slate-200'
                   }`}
                 >
                   <Clock className="w-3.5 h-3.5 text-amber-400" />
@@ -1338,7 +1338,7 @@ export const MangaReaderView: React.FC<MangaReaderViewProps> = ({
                 type="button"
                 disabled={!nextChapter}
                 onClick={() => nextChapter && onSelectChapter(nextChapter)}
-                className="flex items-center justify-center gap-2 px-5 py-2.5 text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+                className="flex items-center justify-center gap-2 px-5 py-2.5 text-xs font-semibold bg-violet-600 hover:bg-violet-500 disabled:opacity-40 text-white rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer"
               >
                 <span>
                   {nextChapter ? `Next: Ch. ${nextChapter.number}` : 'Latest Chapter Reached'}
@@ -1356,7 +1356,7 @@ export const MangaReaderView: React.FC<MangaReaderViewProps> = ({
           role="group"
           aria-label="Bottom Page Progress Scrubber"
           onMouseLeave={() => setHoverScrubPage(null)}
-          className="sticky bottom-0 z-20 w-full bg-[#090D16]/95 backdrop-blur-md border-t border-slate-800/80 px-4 py-1.5 flex items-center gap-3"
+          className="sticky bottom-0 z-20 w-full bg-[#090D16]/95 backdrop-blur-md border-t border-white/[0.06] px-4 py-1.5 flex items-center gap-3"
         >
           <span className="text-[11px] font-mono tabular-nums text-slate-300 whitespace-nowrap shrink-0">
             {hoverScrubPage ? `Page ${hoverScrubPage}` : `${activePageNumber} / ${totalPages}`}
@@ -1376,9 +1376,9 @@ export const MangaReaderView: React.FC<MangaReaderViewProps> = ({
                   aria-label={`Jump to Page ${pNum}`}
                   className={`flex-1 h-full rounded-full transition-all cursor-pointer ${
                     isCurrent
-                      ? 'bg-indigo-500 h-2.5'
+                      ? 'bg-violet-500 h-2.5'
                       : isPassed
-                      ? 'bg-indigo-500/45 hover:bg-indigo-400'
+                      ? 'bg-violet-500/45 hover:bg-violet-400'
                       : 'bg-slate-800 hover:bg-slate-600'
                   }`}
                 />
@@ -1389,7 +1389,7 @@ export const MangaReaderView: React.FC<MangaReaderViewProps> = ({
       )}
 
       {/* FLOATING MINIMAL PAGE COUNTER PILL (Bottom-Left or Bottom-Right) */}
-      <div className="fixed bottom-3 left-5 z-20 pointer-events-none hidden sm:flex items-center gap-2 px-2.5 py-1 rounded-md bg-[#090D16]/85 border border-slate-800/80 text-[11px] font-mono tabular-nums text-slate-300">
+      <div className="fixed bottom-3 left-5 z-20 pointer-events-none hidden sm:flex items-center gap-2 px-2.5 py-1 rounded-md bg-[#090D16]/85 border border-white/[0.06] text-[11px] font-mono tabular-nums text-slate-300">
         <span>
           {activePageNumber} / {totalPages}
         </span>
@@ -1408,14 +1408,14 @@ export const MangaReaderView: React.FC<MangaReaderViewProps> = ({
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-[390px] h-full bg-[#0B0F17] border-l border-slate-800 shadow-2xl flex flex-col justify-between overflow-y-auto"
+            className="w-full max-w-[390px] h-full bg-[#090A0F] border-l border-white/[0.07] shadow-2xl flex flex-col justify-between overflow-y-auto"
           >
             <div>
               {/* Drawer Header */}
-              <div className="sticky top-0 z-10 bg-[#0B0F17]/95 backdrop-blur-md px-5 py-4 border-b border-slate-800 flex items-center justify-between">
+              <div className="sticky top-0 z-10 bg-[#090A0F]/95 backdrop-blur-md px-5 py-4 border-b border-white/[0.07] flex items-center justify-between">
                 <div>
                   <h2 className="text-sm font-bold text-white font-display flex items-center gap-2">
-                    <Settings className="w-4 h-4 text-indigo-400" />
+                    <Settings className="w-4 h-4 text-violet-400" />
                     <span>Reader Settings</span>
                   </h2>
                   <p className="text-[11px] text-slate-400 font-mono mt-0.5">
@@ -1426,7 +1426,7 @@ export const MangaReaderView: React.FC<MangaReaderViewProps> = ({
                   type="button"
                   onClick={() => setShowSettingsDrawer(false)}
                   aria-label="Close Reader Settings"
-                  className="p-1.5 text-slate-400 hover:text-white bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-lg cursor-pointer"
+                  className="p-1.5 text-slate-400 hover:text-white bg-slate-900 hover:bg-slate-800 border border-white/[0.07] rounded-lg cursor-pointer"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -1434,7 +1434,7 @@ export const MangaReaderView: React.FC<MangaReaderViewProps> = ({
 
               {/* Drawer Segmented Section Tabs */}
               <div className="px-5 pt-3">
-                <div className="grid grid-cols-3 gap-1 p-1 bg-[#0F1523] border border-slate-800 rounded-lg text-xs">
+                <div className="grid grid-cols-3 gap-1 p-1 bg-[#11121A] border border-white/[0.07] rounded-lg text-xs">
                   {(
                     [
                       { id: 'layout', label: 'Layout & Strip' },
@@ -1448,7 +1448,7 @@ export const MangaReaderView: React.FC<MangaReaderViewProps> = ({
                       onClick={() => setDrawerTab(t.id)}
                       className={`py-1.5 px-2 rounded-md font-medium transition-colors whitespace-nowrap cursor-pointer ${
                         drawerTab === t.id
-                          ? 'bg-indigo-600 text-white'
+                          ? 'bg-violet-600 text-white'
                           : 'text-slate-400 hover:text-white'
                       }`}
                     >
@@ -1545,7 +1545,7 @@ export const MangaReaderView: React.FC<MangaReaderViewProps> = ({
                         aria-checked={offsetFirstPage}
                         onClick={() => setOffsetFirstPage((prev) => !prev)}
                         className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors cursor-pointer ${
-                          offsetFirstPage ? 'bg-indigo-600' : 'bg-slate-700'
+                          offsetFirstPage ? 'bg-violet-600' : 'bg-slate-700'
                         }`}
                       >
                         <span
@@ -1589,7 +1589,7 @@ export const MangaReaderView: React.FC<MangaReaderViewProps> = ({
                       aria-checked={!headerHidden}
                       onClick={() => setHeaderHidden((prev) => !prev)}
                       className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors cursor-pointer ${
-                        !headerHidden ? 'bg-indigo-600' : 'bg-slate-700'
+                        !headerHidden ? 'bg-violet-600' : 'bg-slate-700'
                       }`}
                     >
                       <span
@@ -1601,7 +1601,7 @@ export const MangaReaderView: React.FC<MangaReaderViewProps> = ({
                   </div>
 
                   {/* Hands-Free Auto-Scroll Switch & Speed Dropdown */}
-                  <div className="pt-3 border-t border-slate-800/80 space-y-3">
+                  <div className="pt-3 border-t border-white/[0.06] space-y-3">
                     <div className="flex items-center justify-between gap-3">
                       <span className="font-semibold text-slate-200">
                         Hands-Free Auto-Scroll
@@ -1646,7 +1646,7 @@ export const MangaReaderView: React.FC<MangaReaderViewProps> = ({
                   </div>
 
                   {/* Genre & Metadata Auto-Mode Toggle Switch */}
-                  <div className="pt-3 border-t border-slate-800/80 space-y-2">
+                  <div className="pt-3 border-t border-white/[0.06] space-y-2">
                     <div className="flex items-center justify-between gap-3">
                       <span className="font-semibold text-slate-200">
                         Auto-Mode by Genre/Tags
@@ -1662,7 +1662,7 @@ export const MangaReaderView: React.FC<MangaReaderViewProps> = ({
                           }}
                           className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors cursor-pointer ${
                             engineConfig?.autoDetectReadingMode !== false
-                              ? 'bg-indigo-600'
+                              ? 'bg-violet-600'
                               : 'bg-slate-700'
                           }`}
                         >
@@ -1728,10 +1728,10 @@ export const MangaReaderView: React.FC<MangaReaderViewProps> = ({
                   )}
 
                   {/* Zoom Stepper */}
-                  <div className="space-y-2 pt-2 border-t border-slate-800/80">
+                  <div className="space-y-2 pt-2 border-t border-white/[0.06]">
                     <div className="flex items-center justify-between">
                       <label className="font-semibold text-slate-200">Page Zoom Scale</label>
-                      <span className="font-mono text-indigo-400 tabular-nums">
+                      <span className="font-mono text-violet-400 tabular-nums">
                         {zoomPercent}%
                       </span>
                     </div>
@@ -1740,14 +1740,14 @@ export const MangaReaderView: React.FC<MangaReaderViewProps> = ({
                         type="button"
                         aria-label="Zoom out"
                         onClick={() => setZoomPercent((z) => Math.max(50, z - 15))}
-                        className="p-2 bg-[#0F1523] hover:bg-slate-800 border border-slate-800 rounded-lg text-slate-200 cursor-pointer"
+                        className="p-2 bg-[#11121A] hover:bg-slate-800 border border-white/[0.07] rounded-lg text-slate-200 cursor-pointer"
                       >
                         <ZoomOut className="w-4 h-4" />
                       </button>
                       <button
                         type="button"
                         onClick={() => setZoomPercent(100)}
-                        className="flex-1 py-2 bg-[#0F1523] hover:bg-slate-800 border border-slate-800 rounded-lg font-mono text-slate-200 cursor-pointer"
+                        className="flex-1 py-2 bg-[#11121A] hover:bg-slate-800 border border-white/[0.07] rounded-lg font-mono text-slate-200 cursor-pointer"
                       >
                         Reset (100%)
                       </button>
@@ -1755,7 +1755,7 @@ export const MangaReaderView: React.FC<MangaReaderViewProps> = ({
                         type="button"
                         aria-label="Zoom in"
                         onClick={() => setZoomPercent((z) => Math.min(200, z + 15))}
-                        className="p-2 bg-[#0F1523] hover:bg-slate-800 border border-slate-800 rounded-lg text-slate-200 cursor-pointer"
+                        className="p-2 bg-[#11121A] hover:bg-slate-800 border border-white/[0.07] rounded-lg text-slate-200 cursor-pointer"
                       >
                         <ZoomIn className="w-4 h-4" />
                       </button>
@@ -1763,7 +1763,7 @@ export const MangaReaderView: React.FC<MangaReaderViewProps> = ({
                   </div>
 
                   {/* Canvas Background Theme Dropdown */}
-                  <div className="flex items-center justify-between gap-3 pt-2 border-t border-slate-800/80">
+                  <div className="flex items-center justify-between gap-3 pt-2 border-t border-white/[0.06]">
                     <span className="font-semibold text-slate-200">
                       Canvas Background (T)
                     </span>
@@ -1783,7 +1783,7 @@ export const MangaReaderView: React.FC<MangaReaderViewProps> = ({
                   </div>
 
                   {/* Eye-Care Optical Filters */}
-                  <div className="space-y-3 pt-2 border-t border-slate-800/80">
+                  <div className="space-y-3 pt-2 border-t border-white/[0.06]">
                     <div className="flex items-center justify-between">
                       <span className="font-semibold text-slate-200 flex items-center gap-1.5">
                         <Sun className="w-3.5 h-3.5 text-amber-400" />
@@ -1797,7 +1797,7 @@ export const MangaReaderView: React.FC<MangaReaderViewProps> = ({
                             setContrast(100);
                             setWarmth(0);
                           }}
-                          className="flex items-center gap-1 text-[11px] font-mono text-indigo-400 hover:text-indigo-300 cursor-pointer"
+                          className="flex items-center gap-1 text-[11px] font-mono text-violet-400 hover:text-violet-300 cursor-pointer"
                         >
                           <RotateCcw className="w-3 h-3" />
                           <span>Reset</span>
@@ -1818,7 +1818,7 @@ export const MangaReaderView: React.FC<MangaReaderViewProps> = ({
                           step={5}
                           value={brightness}
                           onChange={(e) => setBrightness(Number(e.target.value))}
-                          className="w-36 accent-indigo-500 cursor-pointer"
+                          className="w-36 accent-violet-500 cursor-pointer"
                         />
                       </div>
                       <div className="flex items-center justify-between font-mono text-[11px]">
@@ -1845,11 +1845,11 @@ export const MangaReaderView: React.FC<MangaReaderViewProps> = ({
               {drawerTab === 'shortcuts' && (
                 <div className="p-5 space-y-4 text-xs">
                   <div className="flex items-center gap-2 font-semibold text-white">
-                    <Keyboard className="w-4 h-4 text-indigo-400" />
+                    <Keyboard className="w-4 h-4 text-violet-400" />
                     <span>Comix Reader Keyboard Shortcuts</span>
                   </div>
 
-                  <div className="divide-y divide-slate-800/80 border border-slate-800 rounded-lg bg-[#0F1523] font-mono text-[11px]">
+                  <div className="divide-y divide-slate-800/80 border border-white/[0.07] rounded-lg bg-[#11121A] font-mono text-[11px]">
                     {[
                       { key: 'C / B / D / R / A / S', desc: 'Switch Primary App Tabs' },
                       { key: '← / →', desc: 'Previous / Next Page' },
@@ -1867,7 +1867,7 @@ export const MangaReaderView: React.FC<MangaReaderViewProps> = ({
                         className="px-3 py-2 flex items-center justify-between gap-2"
                       >
                         <span className="text-slate-400">{row.desc}</span>
-                        <kbd className="px-2 py-0.5 bg-[#0B0F17] border border-slate-700 rounded text-indigo-300">
+                        <kbd className="px-2 py-0.5 bg-[#090A0F] border border-white/[0.1] rounded text-violet-300">
                           {row.key}
                         </kbd>
                       </div>
@@ -1878,14 +1878,14 @@ export const MangaReaderView: React.FC<MangaReaderViewProps> = ({
             </div>
 
             {/* Drawer Footer */}
-            <div className="p-4 border-t border-slate-800 bg-[#090D16] flex items-center justify-between text-[11px] font-mono text-slate-400">
+            <div className="p-4 border-t border-white/[0.07] bg-[#090D16] flex items-center justify-between text-[11px] font-mono text-slate-400">
               <span>
                 {FMD2_SOURCE_MODULES.find((m) => m.id === activeSource)?.name || activeSource}
               </span>
               <button
                 type="button"
                 onClick={() => setShowSettingsDrawer(false)}
-                className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-sans font-semibold rounded-md cursor-pointer"
+                className="px-4 py-1.5 bg-violet-600 hover:bg-violet-500 text-white font-sans font-semibold rounded-md cursor-pointer"
               >
                 Done
               </button>

@@ -19,9 +19,12 @@ import {
   History,
   Cloud,
   X,
+  Save,
+  Trash2,
 } from 'lucide-react';
 import {
   ALL_FMD2_SOURCES,
+  DEFAULT_ENABLED_SOURCE_IDS,
   DEFAULT_SOURCE_BROWSE_FILTERS,
   filterAndSortSourceBrowserCatalog,
   cycleTriStateGenreFilter,
@@ -48,9 +51,11 @@ import {
   type BrowseSortOption,
   type ReadingSessionProgress,
   type CloudSyncStatus,
+  type LiveSourceBrowseOutcome,
 } from '../utils/fmdLogic.ts';
 import { MangaCoverArt } from './MangaArtRenderer.tsx';
 import { DropdownMenu, type DropdownMenuItem } from './DropdownMenu.tsx';
+import { useFilterPresetStore } from '../store/filterPresetStore.ts';
 
 interface BrowseSourcesViewProps {
   catalog: MangaSeries[];
@@ -154,6 +159,11 @@ export const BrowseSourcesView: React.FC<BrowseSourcesViewProps> = ({
   const [visibleCardsLimit, setVisibleCardsLimit] = useState(30);
   const [showAllGenres, setShowAllGenres] = useState(false);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [selectedMicroTropes, setSelectedMicroTropes] = useState<string[]>([]);
+  const [presetName, setPresetName] = useState('');
+  const presets = useFilterPresetStore((state) => state.presets);
+  const savePreset = useFilterPresetStore((state) => state.savePreset);
+  const deletePreset = useFilterPresetStore((state) => state.deletePreset);
 
   useEffect(() => {
     if (externalSearchQuery && externalSearchQuery !== filters.searchQuery) {
@@ -163,7 +173,7 @@ export const BrowseSourcesView: React.FC<BrowseSourcesViewProps> = ({
 
   useEffect(() => {
     setVisibleCardsLimit(30);
-  }, [filters.sourceId, filters.searchQuery, filters.sortBy, filters.status, filters.format]);
+  }, [filters.sourceId, filters.searchQuery, filters.sortBy, filters.status, filters.format, selectedMicroTropes]);
 
   // Cumulative real live series fetched from /api/manga/browse
   const [liveSeriesMap, setLiveSeriesMap] = useState<Map<string, MangaSeries>>(() => {
@@ -176,6 +186,7 @@ export const BrowseSourcesView: React.FC<BrowseSourcesViewProps> = ({
     return initial;
   });
   const [isLoadingLive, setIsLoadingLive] = useState<boolean>(false);
+  const [sourceOutcomes, setSourceOutcomes] = useState<LiveSourceBrowseOutcome[]>([]);
   const [livePageBySource, setLivePageBySource] = useState<Record<string, number>>({
     ALL: 1,
   });
@@ -240,7 +251,31 @@ export const BrowseSourcesView: React.FC<BrowseSourcesViewProps> = ({
       forceRefresh?: boolean;
       signal?: AbortSignal;
     }) => {
+      if (
+        opts.sourceId !== 'ALL' &&
+        !DEFAULT_ENABLED_SOURCE_IDS.includes(opts.sourceId)
+      ) {
+        const sourceName = ALL_FMD2_SOURCES.find((source) => source.id === opts.sourceId)?.name;
+        setLastSyncedLabel(
+          `${sourceName || opts.sourceId} is catalogued, but has no live scraper yet`
+        );
+        setSourceOutcomes([
+          {
+            sourceId: opts.sourceId,
+            outcome: 'unsupported',
+            latencyMs: 0,
+            resultCount: 0,
+            cached: false,
+            stale: false,
+            message: 'This connector is catalogued but does not have a live scraper.',
+          },
+        ]);
+        setIsLoadingLive(false);
+        return;
+      }
+
       setIsLoadingLive(true);
+      setSourceOutcomes([]);
       try {
         const params = new URLSearchParams({
           sourceId: opts.sourceId,
@@ -259,12 +294,28 @@ export const BrowseSourcesView: React.FC<BrowseSourcesViewProps> = ({
         const res = await fetch(`/api/manga/browse?${params.toString()}`, {
           signal: opts.signal,
         });
-        if (!res.ok) return;
         const data = (await res.json()) as {
           ok?: boolean;
+          error?: string;
           results?: MangaSeries[];
           sourcesQueried?: SourceId[];
+          sourceOutcomes?: LiveSourceBrowseOutcome[];
         };
+        if (opts.signal?.aborted) return;
+        const outcomes = Array.isArray(data.sourceOutcomes) ? data.sourceOutcomes : [];
+        setSourceOutcomes(outcomes);
+        const failedOutcomes = outcomes.filter(
+          (outcome) => !['success', 'empty'].includes(outcome.outcome)
+        );
+        const staleCount = outcomes.filter((outcome) => outcome.stale).length;
+        if (!res.ok || data.ok === false) {
+          setLastSyncedLabel(
+            failedOutcomes.length > 0
+              ? `${failedOutcomes.length} live source${failedOutcomes.length === 1 ? '' : 's'} unavailable`
+              : data.error || 'Live source request failed'
+          );
+          return;
+        }
         if (Array.isArray(data.results) && data.results.length > 0) {
           const taggedResults =
             opts.sourceId !== 'ALL'
@@ -280,14 +331,35 @@ export const BrowseSourcesView: React.FC<BrowseSourcesViewProps> = ({
           mergeIncomingSeries(taggedResults);
           const srcLabel =
             opts.sourceId === 'ALL'
-              ? `All ${ALL_FMD2_SOURCES.length} Live Sources`
+              ? `All ${DEFAULT_ENABLED_SOURCE_IDS.length} Live Sources`
               : ALL_FMD2_SOURCES.find((s) => s.id === opts.sourceId)?.domain || opts.sourceId;
+          const statusLabel = failedOutcomes.length
+            ? ` · ${failedOutcomes.length} source${failedOutcomes.length === 1 ? '' : 's'} unavailable`
+            : staleCount
+            ? ` · showing cached data for ${staleCount} source${staleCount === 1 ? '' : 's'}`
+            : '';
+          setLastSyncedLabel(`Synced ${data.results.length} live series from ${srcLabel}${statusLabel}`);
+        } else if (outcomes.length > 0 && outcomes.every((outcome) => outcome.outcome === 'empty')) {
+          setLastSyncedLabel('No live series matched this query');
+        } else if (failedOutcomes.length > 0) {
           setLastSyncedLabel(
-            `Synced ${data.results.length} live series from ${srcLabel} (Page ${opts.page})`
+            `${failedOutcomes.length} live source${failedOutcomes.length === 1 ? '' : 's'} unavailable`
           );
         }
       } catch {
-        // Ignore abort errors
+        if (opts.signal?.aborted) return;
+        const failedSources = opts.sourceId === 'ALL' ? DEFAULT_ENABLED_SOURCE_IDS : [opts.sourceId];
+        const outcomes: LiveSourceBrowseOutcome[] = failedSources.map((sourceId) => ({
+          sourceId,
+          outcome: 'network_error',
+          latencyMs: 0,
+          resultCount: 0,
+          cached: false,
+          stale: false,
+          message: 'Could not reach the local browse service.',
+        }));
+        setSourceOutcomes(outcomes);
+        setLastSyncedLabel('Could not reach the live browse service');
       } finally {
         if (!opts.signal?.aborted) {
           setIsLoadingLive(false);
@@ -410,7 +482,7 @@ export const BrowseSourcesView: React.FC<BrowseSourcesViewProps> = ({
         label: 'Completed',
         description: 'Finished publication run',
         badge: headerFilterOptions.statusCounts.Completed,
-        accentDotColor: 'bg-indigo-400',
+        accentDotColor: 'bg-violet-300',
       },
       {
         value: 'Hiatus',
@@ -530,9 +602,21 @@ export const BrowseSourcesView: React.FC<BrowseSourcesViewProps> = ({
 
   // Filtered and sorted manga/manhwa catalog for the selected source and filters
   const filteredCatalog = useMemo(
-    () => filterAndSortSourceBrowserCatalog(activePool, filters),
-    [activePool, filters]
+    () => {
+      const filtered = filterAndSortSourceBrowserCatalog(activePool, filters);
+      if (selectedMicroTropes.length === 0) return filtered;
+      return filtered.filter((series) => {
+        const tags = (series.metadataTags || []).map((tag) => tag.toLowerCase());
+        return selectedMicroTropes.every((trope) => tags.includes(trope.toLowerCase()));
+      });
+    },
+    [activePool, filters, selectedMicroTropes]
   );
+
+  const availableMicroTropes = useMemo(() => {
+    const tags = activePool.flatMap((series) => series.metadataTags || []);
+    return [...new Set(tags.map((tag) => tag.trim()).filter((tag) => tag && !/18\+|nsfw|mature/i.test(tag)))].sort((a, b) => a.localeCompare(b)).slice(0, 18);
+  }, [activePool]);
 
   const selectedSourceMeta = useMemo(
     () =>
@@ -541,6 +625,18 @@ export const BrowseSourcesView: React.FC<BrowseSourcesViewProps> = ({
         : ALL_FMD2_SOURCES.find((s) => s.id === filters.sourceId) || null,
     [filters.sourceId]
   );
+
+  const sourceOutcomesNeedingAttention = sourceOutcomes.filter(
+    (outcome) =>
+      (outcome.outcome !== 'unsupported' && !['success', 'empty'].includes(outcome.outcome)) ||
+      outcome.stale
+  );
+  const hasSourceFailures = sourceOutcomes.some(
+    (outcome) => outcome.outcome !== 'unsupported' && !['success', 'empty'].includes(outcome.outcome)
+  );
+  const hasUnsupportedSource = sourceOutcomes.some((outcome) => outcome.outcome === 'unsupported');
+  const sourcesReturnedEmpty =
+    sourceOutcomes.length > 0 && sourceOutcomes.every((outcome) => outcome.outcome === 'empty');
 
   const hasActiveFilters =
     filters.searchQuery.trim() !== '' ||
@@ -552,13 +648,29 @@ export const BrowseSourcesView: React.FC<BrowseSourcesViewProps> = ({
     filters.minChapters > 0 ||
     filters.minYear > 1985 ||
     filters.maxYear < 2026 ||
-    filters.sortBy !== 'popular';
+    filters.sortBy !== 'popular' ||
+    selectedMicroTropes.length > 0;
 
   const handleResetFilters = () => {
     setFilters((prev) => ({
       ...DEFAULT_SOURCE_BROWSE_FILTERS,
       sourceId: prev.sourceId,
     }));
+    setSelectedMicroTropes([]);
+  };
+
+  const handleSavePreset = () => {
+    const name = presetName.trim();
+    if (!name) return;
+    savePreset(name, filters, selectedMicroTropes);
+    setPresetName('');
+  };
+
+  const handleApplyPreset = (presetId: string) => {
+    const preset = presets.find((item) => item.id === presetId);
+    if (!preset) return;
+    setFilters({ ...preset.filters });
+    setSelectedMicroTropes([...(preset.microTropes || [])]);
   };
 
   const handleGenreToggle = (genre: string) => {
@@ -600,13 +712,13 @@ export const BrowseSourcesView: React.FC<BrowseSourcesViewProps> = ({
   const currentSourcePage = livePageBySource[filters.sourceId] || 1;
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start animate-view-enter">
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
       {/* LEFT RAIL: Verified Live FMD2 Source Connectors Directory */}
-      <aside className="lg:col-span-3 bg-[#0F1523] border border-slate-800 rounded-xl p-4 space-y-3.5 lg:sticky lg:top-20">
+      <aside className="lg:col-span-3 bg-[#11121A] border border-white/[0.07] rounded-xl p-4 space-y-3.5 lg:sticky lg:top-20">
         <div className="flex items-center justify-between gap-2">
           <div>
-            <div className="text-[11px] font-mono uppercase tracking-wider text-indigo-400">
-              LIVE FMD2 CONNECTORS
+            <div className="text-[11px] font-mono uppercase tracking-wider text-violet-300">
+              FMD2 CONNECTOR CATALOGUE
             </div>
             <h2 className="text-base font-bold text-white font-display">
               Source Directory ({ALL_FMD2_SOURCES.length})
@@ -624,7 +736,7 @@ export const BrowseSourcesView: React.FC<BrowseSourcesViewProps> = ({
             <span
               aria-hidden="true"
               className={`relative inline-flex h-4 w-7 shrink-0 items-center rounded-full transition-colors ${
-                showEnabledSourcesOnly ? 'bg-indigo-600' : 'bg-slate-700'
+                showEnabledSourcesOnly ? 'bg-violet-500' : 'bg-slate-700'
               }`}
             >
               <span
@@ -645,7 +757,7 @@ export const BrowseSourcesView: React.FC<BrowseSourcesViewProps> = ({
             value={sourceSearch}
             onChange={(e) => setSourceSearch(e.target.value)}
             placeholder="Search live source or domain..."
-            className="w-full pl-8 pr-3 py-2 text-xs bg-[#0B0F17] border border-slate-800 rounded-lg text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500"
+            className="w-full pl-8 pr-3 py-2 text-xs bg-[#090A0F] border border-white/[0.07] rounded-lg text-white placeholder:text-slate-500 focus:outline-none focus:border-violet-300/25"
           />
         </div>
 
@@ -656,20 +768,20 @@ export const BrowseSourcesView: React.FC<BrowseSourcesViewProps> = ({
           onClick={() => setFilters((prev) => ({ ...prev, sourceId: 'ALL' }))}
           className={`w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg border text-left transition-colors ${
             filters.sourceId === 'ALL'
-              ? 'bg-indigo-600/15 border-indigo-500 text-white'
-              : 'bg-[#0B0F17]/70 border-slate-800/90 text-slate-300 hover:border-slate-700 hover:text-white'
+              ? 'bg-violet-500/12 border-violet-300/25 text-white'
+              : 'bg-[#090A0F]/70 border-white/[0.07] text-slate-300 hover:border-white/[0.1] hover:text-white'
           }`}
         >
           <div className="flex items-center gap-2.5 min-w-0">
-            <Globe className="w-4 h-4 text-indigo-400 shrink-0" />
+            <Globe className="w-4 h-4 text-violet-300 shrink-0" />
             <div className="truncate">
               <div className="text-xs font-semibold truncate">All Live Sources</div>
               <div className="text-[11px] font-mono text-slate-400 truncate">
-                {ALL_FMD2_SOURCES.length} Verified Live Connectors
+                {DEFAULT_ENABLED_SOURCE_IDS.length} Live Scrapers · {ALL_FMD2_SOURCES.length} Connector Descriptors
               </div>
             </div>
           </div>
-          <span className="text-xs font-mono tabular-nums text-indigo-300 shrink-0">
+          <span className="text-xs font-mono tabular-nums text-violet-200 shrink-0">
             {activePool.length}
           </span>
         </button>
@@ -679,6 +791,7 @@ export const BrowseSourcesView: React.FC<BrowseSourcesViewProps> = ({
           {displayedSidebarSources.map((src) => {
             const isSelected = filters.sourceId === src.id;
             const isEnabled = enabledSources.includes(src.id);
+            const hasLiveAdapter = DEFAULT_ENABLED_SOURCE_IDS.includes(src.id);
             const count = sourceSeriesCounts.get(src.id);
 
             return (
@@ -697,8 +810,8 @@ export const BrowseSourcesView: React.FC<BrowseSourcesViewProps> = ({
                 }}
                 className={`group flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg border cursor-pointer transition-colors ${
                   isSelected
-                    ? 'bg-indigo-600/15 border-indigo-500 text-white'
-                    : 'bg-[#0B0F17]/60 border-slate-800/80 text-slate-300 hover:border-slate-700 hover:text-white'
+                    ? 'bg-violet-500/12 border-violet-300/25 text-white'
+                    : 'bg-[#090A0F]/60 border-white/[0.06] text-slate-300 hover:border-white/[0.1] hover:text-white'
                 }`}
               >
                 <div className="min-w-0 flex-1">
@@ -729,16 +842,21 @@ export const BrowseSourcesView: React.FC<BrowseSourcesViewProps> = ({
                     role="switch"
                     aria-checked={isEnabled}
                     aria-label={`Toggle ${src.name} connector`}
+                    aria-disabled={!hasLiveAdapter}
                     title={
-                      isEnabled
+                      !hasLiveAdapter
+                        ? `${src.name} is catalog metadata only; a live scraper is not implemented yet`
+                        : isEnabled
                         ? `${src.name} is enabled in FMD2 Engine`
                         : `Enable ${src.name} connector`
                     }
                     onClick={(e) => {
                       e.stopPropagation();
-                      onToggleEnableSource(src.id);
+                      if (hasLiveAdapter) onToggleEnableSource(src.id);
                     }}
-                    className={`relative inline-flex h-4 w-7 shrink-0 items-center rounded-full transition-colors cursor-pointer ${
+                    className={`relative inline-flex h-4 w-7 shrink-0 items-center rounded-full transition-colors ${
+                      hasLiveAdapter ? 'cursor-pointer' : 'cursor-not-allowed opacity-40'
+                    } ${
                       isEnabled ? 'bg-emerald-500' : 'bg-slate-700 hover:bg-slate-600'
                     }`}
                   >
@@ -757,7 +875,7 @@ export const BrowseSourcesView: React.FC<BrowseSourcesViewProps> = ({
             <button
               type="button"
               onClick={() => setVisibleSourcesLimit((prev) => prev + 50)}
-              className="w-full py-2 px-3 text-xs font-mono text-indigo-400 hover:text-white bg-[#0B0F17] border border-slate-800 rounded-lg transition-colors text-center cursor-pointer"
+              className="w-full py-2 px-3 text-xs font-mono text-violet-300 hover:text-white bg-[#090A0F] border border-white/[0.07] rounded-lg transition-colors text-center cursor-pointer"
             >
               Show More Connectors (+{filteredSourcesList.length - displayedSidebarSources.length})
             </button>
@@ -768,13 +886,13 @@ export const BrowseSourcesView: React.FC<BrowseSourcesViewProps> = ({
       {/* RIGHT WORKSPACE: Source Header, Dropdown Filter Deck & Live Catalog Grid */}
       <div className="lg:col-span-9 space-y-4 min-w-0">
         {/* Selected Source Banner & Filter Deck */}
-        <section className="relative z-30 bg-[#0F1523] border border-slate-800/80 rounded-xl p-4 sm:p-5 space-y-3.5">
+        <section className="relative z-30 bg-[#11121A] border border-white/[0.06] rounded-xl p-4 sm:p-5 space-y-3.5">
           {/* Header Block: Source Title & Quick Actions + Genre / Status / Sort by Dropdown Toolbar */}
-          <div className="border-b border-slate-800/80 pb-3.5 space-y-3">
+          <div className="border-b border-white/[0.06] pb-3.5 space-y-3">
             {/* Top Row: Source Title, Lua Module & Sync Status + Quick Utility Buttons */}
             <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
               <div className="space-y-1 min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] font-mono text-indigo-400">
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] font-mono text-violet-300">
                   <span className="break-all sm:break-normal">
                     {selectedSourceMeta
                       ? `${selectedSourceMeta.luaModule.toUpperCase()} · ${selectedSourceMeta.domain.toUpperCase()}`
@@ -797,7 +915,7 @@ export const BrowseSourcesView: React.FC<BrowseSourcesViewProps> = ({
                     role="switch"
                     aria-checked={enabledSources.includes(selectedSourceMeta.id)}
                     onClick={() => onToggleEnableSource(selectedSourceMeta.id)}
-                    className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg border bg-[#0B0F17] border-slate-800 text-slate-200 hover:border-indigo-500/60 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+                    className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg border bg-[#090A0F] border-white/[0.07] text-slate-200 hover:border-violet-300/25 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
                   >
                     <span>Source Active</span>
                     <span
@@ -824,12 +942,12 @@ export const BrowseSourcesView: React.FC<BrowseSourcesViewProps> = ({
                     type="button"
                     onClick={onOpenCloudSync}
                     aria-label="Open Cloud Reading History Sync"
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border bg-[#0B0F17] border-slate-800 text-slate-300 hover:border-indigo-500 hover:text-white transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border bg-[#090A0F] border-white/[0.07] text-slate-300 hover:border-violet-300/25 hover:text-white transition-colors whitespace-nowrap shrink-0 cursor-pointer"
                   >
                     <Cloud
                       className={`w-3.5 h-3.5 ${
                         cloudSyncStatus === 'syncing'
-                          ? 'text-indigo-400 animate-pulse'
+                          ? 'text-violet-300 animate-pulse'
                           : cloudSyncStatus === 'synced'
                           ? 'text-emerald-400'
                           : 'text-amber-400'
@@ -843,10 +961,10 @@ export const BrowseSourcesView: React.FC<BrowseSourcesViewProps> = ({
                   type="button"
                   onClick={handleRefreshLiveFeed}
                   disabled={isLoadingLive}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border bg-[#0B0F17] border-slate-700 text-slate-200 hover:border-indigo-500 hover:text-white transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border bg-[#090A0F] border-white/[0.1] text-slate-200 hover:border-violet-300/25 hover:text-white transition-colors whitespace-nowrap shrink-0 cursor-pointer"
                 >
                   <RefreshCw
-                    className={`w-3.5 h-3.5 text-indigo-400 ${
+                    className={`w-3.5 h-3.5 text-violet-300 ${
                       isLoadingLive ? 'animate-spin' : ''
                     }`}
                   />
@@ -857,7 +975,7 @@ export const BrowseSourcesView: React.FC<BrowseSourcesViewProps> = ({
                   <button
                     type="button"
                     onClick={handleResetFilters}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg border border-slate-700 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg border border-white/[0.1] transition-colors whitespace-nowrap shrink-0 cursor-pointer"
                   >
                     <RotateCcw className="w-3.5 h-3.5" />
                     <span>Reset</span>
@@ -931,7 +1049,7 @@ export const BrowseSourcesView: React.FC<BrowseSourcesViewProps> = ({
                     ? `Search live ${selectedSourceMeta.name} catalog...`
                     : 'Search live sources by title, author, or tag...'
                 }
-                className="w-full pl-10 pr-3 py-1.5 text-xs bg-[#0B0F17] border border-slate-800 rounded-lg text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500"
+                className="w-full pl-10 pr-3 py-1.5 text-xs bg-[#090A0F] border border-white/[0.07] rounded-lg text-white placeholder:text-slate-500 focus:outline-none focus:border-violet-300/25"
               />
             </div>
 
@@ -1021,7 +1139,7 @@ export const BrowseSourcesView: React.FC<BrowseSourcesViewProps> = ({
               <span aria-hidden="true">·</span>
               <span>
                 Sorted by{' '}
-                <strong className="text-indigo-300">
+                <strong className="text-violet-200">
                   {BROWSE_SORT_MENU_OPTIONS.find((o) => o.id === normalizedSortValue)?.label ||
                     'Popularity'}
                 </strong>
@@ -1035,7 +1153,7 @@ export const BrowseSourcesView: React.FC<BrowseSourcesViewProps> = ({
               {filters.includedGenres.length > 0 && (
                 <>
                   <span aria-hidden="true">·</span>
-                  <span className="text-indigo-300">
+                  <span className="text-violet-200">
                     Genre: {filters.includedGenres.join(', ')}
                   </span>
                 </>
@@ -1045,21 +1163,22 @@ export const BrowseSourcesView: React.FC<BrowseSourcesViewProps> = ({
             {/* Genres Dropdown Drawer Trigger */}
             <button
               type="button"
-              aria-expanded={showAdvancedFilters}
+              aria-expanded={showAdvancedFilters || filters.includedGenres.length > 0 || filters.excludedGenres.length > 0 || selectedMicroTropes.length > 0}
               onClick={() => setShowAdvancedFilters((v) => !v)}
               className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors whitespace-nowrap cursor-pointer ${
                 showAdvancedFilters ||
                 filters.includedGenres.length > 0 ||
-                filters.excludedGenres.length > 0
-                  ? 'bg-indigo-600/20 border-indigo-500/60 text-indigo-300'
-                  : 'bg-[#0B0F17] border-slate-800 text-slate-300 hover:text-white'
+                filters.excludedGenres.length > 0 ||
+                selectedMicroTropes.length > 0
+                  ? 'bg-violet-500/12 border-violet-300/25 text-violet-200'
+                  : 'bg-[#090A0F] border-white/[0.07] text-slate-300 hover:text-white'
               }`}
             >
               <SlidersHorizontal className="w-3.5 h-3.5" />
               <span>
                 Advanced Multi-Genre &amp; Year Filter
-                {filters.includedGenres.length + filters.excludedGenres.length > 0
-                  ? ` (${filters.includedGenres.length + filters.excludedGenres.length})`
+                {filters.includedGenres.length + filters.excludedGenres.length + selectedMicroTropes.length > 0
+                  ? ` (${filters.includedGenres.length + filters.excludedGenres.length + selectedMicroTropes.length})`
                   : ''}
               </span>
               {showAdvancedFilters ? (
@@ -1070,11 +1189,29 @@ export const BrowseSourcesView: React.FC<BrowseSourcesViewProps> = ({
             </button>
           </div>
 
+          <div className="flex flex-col gap-3 border-t border-white/[0.06] pt-3 sm:flex-row sm:items-center">
+            <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+              <span className="mr-1 text-[9px] font-bold uppercase tracking-[0.16em] text-white/35">Saved filters</span>
+              {presets.length === 0 && <span className="text-[10px] text-white/30">Save a setup to reuse it later.</span>}
+              {presets.map((preset) => (
+                <span key={preset.id} className="inline-flex items-center overflow-hidden rounded-md border border-white/[0.08] bg-white/[0.025]">
+                  <button type="button" onClick={() => handleApplyPreset(preset.id)} className="px-2.5 py-1.5 text-[10px] font-semibold text-white/65 transition-colors hover:bg-violet-400/10 hover:text-violet-100">{preset.name}</button>
+                  <button type="button" onClick={() => deletePreset(preset.id)} aria-label={`Delete ${preset.name} filter preset`} className="border-l border-white/[0.07] px-1.5 py-1.5 text-white/30 transition-colors hover:bg-rose-400/10 hover:text-rose-200"><Trash2 className="h-3 w-3" /></button>
+                </span>
+              ))}
+            </div>
+            <form className="flex shrink-0 items-center gap-1.5" onSubmit={(event) => { event.preventDefault(); handleSavePreset(); }}>
+              <input aria-label="Saved filter preset name" value={presetName} onChange={(event) => setPresetName(event.target.value)} maxLength={32} placeholder="Name this filter" className="h-8 w-32 rounded-md border border-white/[0.08] bg-black/20 px-2 text-[10px] text-white outline-none placeholder:text-white/25 focus:border-violet-300/35" />
+              <button type="submit" disabled={!presetName.trim()} className="inline-flex h-8 items-center gap-1.5 rounded-md border border-violet-300/15 bg-violet-400/10 px-2.5 text-[10px] font-semibold text-violet-100 transition-colors hover:bg-violet-400/20 disabled:cursor-not-allowed disabled:opacity-35"><Save className="h-3 w-3" />Save</button>
+            </form>
+          </div>
+
           {/* Collapsible Genre & Year Popover Panel */}
           {(showAdvancedFilters ||
             filters.includedGenres.length > 0 ||
-            filters.excludedGenres.length > 0) && (
-            <div className="space-y-3 pt-3 border-t border-slate-800/80">
+            filters.excludedGenres.length > 0 ||
+            selectedMicroTropes.length > 0) && (
+            <div className="space-y-3 pt-3 border-t border-white/[0.06]">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-2 text-[11px] font-mono text-slate-400">
                   <span>Tri-State Genres (1st Click: +Include · 2nd Click: −Exclude)</span>
@@ -1096,7 +1233,7 @@ export const BrowseSourcesView: React.FC<BrowseSourcesViewProps> = ({
                           minYear: Math.min(Number(e.target.value) || 1985, prev.maxYear),
                         }))
                       }
-                      className="w-14 bg-[#0B0F17] border border-slate-800 rounded px-1.5 py-0.5 text-[11px] font-mono text-white text-center tabular-nums"
+                      className="w-14 bg-[#090A0F] border border-white/[0.07] rounded px-1.5 py-0.5 text-[11px] font-mono text-white text-center tabular-nums"
                     />
                     <span>–</span>
                     <input
@@ -1111,14 +1248,14 @@ export const BrowseSourcesView: React.FC<BrowseSourcesViewProps> = ({
                           maxYear: Math.max(Number(e.target.value) || 2026, prev.minYear),
                         }))
                       }
-                      className="w-14 bg-[#0B0F17] border border-slate-800 rounded px-1.5 py-0.5 text-[11px] font-mono text-white text-center tabular-nums"
+                      className="w-14 bg-[#090A0F] border border-white/[0.07] rounded px-1.5 py-0.5 text-[11px] font-mono text-white text-center tabular-nums"
                     />
                   </div>
 
                   <button
                     type="button"
                     onClick={() => setShowAllGenres((v) => !v)}
-                    className="flex items-center gap-1 text-[11px] font-mono text-indigo-400 hover:text-indigo-300 cursor-pointer"
+                    className="flex items-center gap-1 text-[11px] font-mono text-violet-300 hover:text-violet-200 cursor-pointer"
                   >
                     <span>
                       {showAllGenres
@@ -1149,7 +1286,7 @@ export const BrowseSourcesView: React.FC<BrowseSourcesViewProps> = ({
                           ? 'bg-emerald-500/15 border-emerald-500/60 text-emerald-300'
                           : isExcluded
                           ? 'bg-rose-500/15 border-rose-500/60 text-rose-300 line-through'
-                          : 'bg-[#0B0F17] border-slate-800 text-slate-300 hover:border-slate-700 hover:text-white'
+                          : 'bg-[#090A0F] border-white/[0.07] text-slate-300 hover:border-white/[0.1] hover:text-white'
                       }`}
                     >
                       {isIncluded && <Plus className="w-2.5 h-2.5 text-emerald-400" />}
@@ -1159,6 +1296,21 @@ export const BrowseSourcesView: React.FC<BrowseSourcesViewProps> = ({
                   );
                 })}
               </div>
+
+              <div className="border-t border-white/[0.06] pt-3">
+                <div className="mb-2 flex items-center gap-2 text-[10px] font-semibold text-white/45">
+                  <span>Micro-tropes &amp; tags</span>
+                  {selectedMicroTropes.length > 0 && <span className="rounded bg-violet-400/10 px-1.5 py-0.5 text-[9px] text-violet-200">{selectedMicroTropes.length} selected</span>}
+                </div>
+                {availableMicroTropes.length > 0 ? (
+                  <div className="flex flex-wrap gap-1.5">
+                    {availableMicroTropes.map((tag) => {
+                      const isSelected = selectedMicroTropes.some((item) => item.toLowerCase() === tag.toLowerCase());
+                      return <button key={tag} type="button" aria-pressed={isSelected} onClick={() => setSelectedMicroTropes((current) => isSelected ? current.filter((item) => item.toLowerCase() !== tag.toLowerCase()) : [...current, tag])} className={`rounded-full border px-2.5 py-1 text-[9px] font-medium transition-colors ${isSelected ? 'border-violet-300/25 bg-violet-400/15 text-violet-100' : 'border-white/[0.07] bg-white/[0.02] text-white/45 hover:border-white/15 hover:text-white/75'}`}>{tag}</button>;
+                    })}
+                  </div>
+                ) : <p className="text-[10px] text-white/30">This source has not provided micro-trope tags.</p>}
+              </div>
             </div>
           )}
         </section>
@@ -1167,7 +1319,7 @@ export const BrowseSourcesView: React.FC<BrowseSourcesViewProps> = ({
         {recentlyReadEntries.length > 0 && onResumeSeries && (
           <section
             aria-label="Continue Reading Sessions"
-            className="bg-[#0F1523] border border-slate-800 rounded-xl p-4 space-y-3"
+            className="bg-[#11121A] border border-white/[0.07] rounded-xl p-4 space-y-3"
           >
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-2">
@@ -1199,11 +1351,11 @@ export const BrowseSourcesView: React.FC<BrowseSourcesViewProps> = ({
                 return (
                   <article
                     key={`browse-recent-${series.id}`}
-                    className="bg-[#0B0F17] border border-slate-800 hover:border-slate-700 rounded-xl p-3 flex items-center gap-3 transition-colors"
+                    className="bg-[#090A0F] border border-white/[0.07] hover:border-white/[0.1] rounded-xl p-3 flex items-center gap-3 transition-colors"
                   >
                     <div
                       onClick={() => onResumeSeries(series, progress)}
-                      className="w-12 aspect-[3/4] rounded-lg overflow-hidden border border-slate-800 shrink-0 cursor-pointer"
+                      className="w-12 aspect-[3/4] rounded-lg overflow-hidden border border-white/[0.07] shrink-0 cursor-pointer"
                     >
                       <MangaCoverArt series={series} className="w-full h-full" />
                     </div>
@@ -1256,7 +1408,7 @@ export const BrowseSourcesView: React.FC<BrowseSourcesViewProps> = ({
             {selectedSourceMeta && (
               <>
                 <span aria-hidden="true">·</span>
-                <span className="font-mono text-indigo-400">
+                <span className="font-mono text-violet-300">
                   Source: {selectedSourceMeta.name} ({selectedSourceMeta.domain})
                 </span>
               </>
@@ -1303,7 +1455,7 @@ export const BrowseSourcesView: React.FC<BrowseSourcesViewProps> = ({
             type="button"
             onClick={handleLoadNextPage}
             disabled={isLoadingLive}
-            className="flex items-center gap-1.5 text-xs font-mono text-indigo-400 hover:text-indigo-300 transition-colors"
+            className="flex items-center gap-1.5 text-xs font-mono text-violet-300 hover:text-violet-200 transition-colors"
           >
             <span>
               {isLoadingLive
@@ -1314,10 +1466,52 @@ export const BrowseSourcesView: React.FC<BrowseSourcesViewProps> = ({
           </button>
         </div>
 
+        {sourceOutcomesNeedingAttention.length > 0 && (
+          <section
+            role="status"
+            aria-live="polite"
+            className="flex flex-col gap-3 rounded-xl border border-amber-500/30 bg-amber-500/5 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+          >
+            <div className="min-w-0 space-y-1">
+              <p className="text-sm font-semibold text-amber-200">
+                {hasSourceFailures
+                  ? 'Some live sources need attention.'
+                  : 'Showing previously cached source data.'}
+              </p>
+              <ul className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-amber-100/80">
+                {sourceOutcomesNeedingAttention.map((outcome) => {
+                  const sourceName = ALL_FMD2_SOURCES.find((source) => source.id === outcome.sourceId)?.name || outcome.sourceId;
+                  const lastUpdated = outcome.fetchedAt
+                    ? new Date(outcome.fetchedAt).toLocaleTimeString([], {
+                        hour: 'numeric',
+                        minute: '2-digit',
+                      })
+                    : undefined;
+                  return (
+                    <li key={outcome.sourceId}>
+                      <span className="font-medium">{sourceName}:</span> {outcome.message}
+                      {outcome.stale && lastUpdated ? ` Last successful refresh ${lastUpdated}.` : ''}
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+            <button
+              type="button"
+              onClick={handleRefreshLiveFeed}
+              disabled={isLoadingLive}
+              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg border border-amber-400/30 bg-slate-950/40 px-3 py-2 text-xs font-semibold text-amber-100 transition-colors hover:bg-slate-950/70 disabled:cursor-wait disabled:opacity-60"
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${isLoadingLive ? 'animate-spin' : ''}`} />
+              Retry sources
+            </button>
+          </section>
+        )}
+
         {/* Filtered Catalog Grid */}
         {isLoadingLive && filteredCatalog.length === 0 ? (
-          <div className="bg-[#0F1523] border border-slate-800 rounded-xl p-12 text-center space-y-3">
-            <RefreshCw className="w-6 h-6 text-indigo-400 animate-spin mx-auto" />
+          <div className="bg-[#11121A] border border-white/[0.07] rounded-xl p-12 text-center space-y-3">
+            <RefreshCw className="w-6 h-6 text-violet-300 animate-spin mx-auto" />
             <div className="text-lg font-bold text-white font-display">
               Fetching Live Catalog from{' '}
               {selectedSourceMeta ? selectedSourceMeta.name : 'Verified FMD2 Sources'}...
@@ -1327,36 +1521,50 @@ export const BrowseSourcesView: React.FC<BrowseSourcesViewProps> = ({
             </p>
           </div>
         ) : filteredCatalog.length === 0 ? (
-          <div className="bg-[#0F1523] border border-slate-800 rounded-xl p-12 text-center space-y-4">
+          <div className="bg-[#11121A] border border-white/[0.07] rounded-xl p-12 text-center space-y-4">
             <div className="text-lg font-bold text-white font-display">
-              No Series Match Your Active Source & Filter Criteria
+              {hasSourceFailures
+                ? 'Live source unavailable'
+                : hasUnsupportedSource
+                ? 'This connector is catalogue-only'
+                : sourcesReturnedEmpty
+                ? 'No live series matched this query'
+                : 'No Series Match Your Active Source & Filter Criteria'}
             </div>
             <p className="text-xs sm:text-sm text-slate-400 max-w-md mx-auto">
-              Try clearing excluded genres, lowering the minimum chapter threshold, or refreshing the live source feed.
+              {hasSourceFailures
+                ? 'The selected source could not return live results. Retry the source or choose another live connector.'
+                : hasUnsupportedSource
+                ? 'This connector is listed in the FMD2 catalogue, but a live scraper is not available yet.'
+                : sourcesReturnedEmpty
+                ? 'The selected live sources responded, but none matched this search. Try a different title or adjust your filters.'
+                : 'Try clearing excluded genres, lowering the minimum chapter threshold, or refreshing the live source feed.'}
             </p>
             <div className="flex items-center justify-center gap-3">
               <button
                 type="button"
                 onClick={handleResetFilters}
-                className="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition-colors"
+                className="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-semibold bg-violet-500 hover:bg-violet-400 text-white rounded-lg transition-colors"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
                 <span>Reset Browse Filters</span>
               </button>
-              <button
-                type="button"
-                onClick={handleRefreshLiveFeed}
-                className="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg border border-slate-700 transition-colors"
-              >
-                <RefreshCw className="w-3.5 h-3.5" />
-                <span>Fetch Live From Upstream</span>
-              </button>
+              {!hasUnsupportedSource && (
+                <button
+                  type="button"
+                  onClick={handleRefreshLiveFeed}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg border border-white/[0.1] transition-colors"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  <span>{hasSourceFailures ? 'Retry Live Source' : 'Fetch Live From Upstream'}</span>
+                </button>
+              )}
             </div>
           </div>
         ) : (
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-              {filteredCatalog.slice(0, visibleCardsLimit).map((series) => {
+              {filteredCatalog.slice(0, visibleCardsLimit).map((series, idx) => {
                 const effectiveSourceId: SourceId =
                   filters.sourceId !== 'ALL' ? filters.sourceId : series.primarySource;
                 const sourceMeta =
@@ -1377,13 +1585,14 @@ export const BrowseSourcesView: React.FC<BrowseSourcesViewProps> = ({
                 return (
                   <article
                     key={series.id}
-                    className="manga-card-interactive animate-card-enter bg-[#0F1523] border border-slate-800 hover:border-slate-700 rounded-xl overflow-hidden flex flex-col justify-between transition-colors"
+                    className="manga-card-interactive animate-card-enter bg-[#11121A] border border-white/[0.07] hover:border-white/[0.1] rounded-xl overflow-hidden flex flex-col justify-between transition-colors"
+                    style={{ '--stagger-idx': idx } as React.CSSProperties}
                   >
                     <div className="p-4 flex gap-3.5">
                       {/* 3:4 Cover Art -> Opens Main Manga Page */}
                       <div
                         onClick={() => onInspectSeries(seriesWithSource)}
-                        className="w-24 sm:w-28 aspect-[3/4] rounded-lg overflow-hidden border border-slate-800 shrink-0 cursor-pointer"
+                        className="w-24 sm:w-28 aspect-[3/4] rounded-lg overflow-hidden border border-white/[0.07] shrink-0 cursor-pointer"
                       >
                         <div className="w-full h-full manga-cover-zoom">
                           <MangaCoverArt series={series} className="w-full h-full" />
@@ -1393,7 +1602,7 @@ export const BrowseSourcesView: React.FC<BrowseSourcesViewProps> = ({
                       {/* Unboxed Metadata Hierarchy */}
                       <div className="flex-1 min-w-0 flex flex-col justify-between">
                         <div className="space-y-1">
-                          <div className="text-[11px] font-mono text-indigo-400 truncate">
+                          <div className="text-[11px] font-mono text-violet-300 truncate">
                             {sourceMeta.name.toUpperCase()} · {contentFormat.toUpperCase()}
                           </div>
 
@@ -1401,7 +1610,7 @@ export const BrowseSourcesView: React.FC<BrowseSourcesViewProps> = ({
                             <button
                               type="button"
                               onClick={() => onInspectSeries(seriesWithSource)}
-                              className="text-left hover:text-indigo-300 transition-colors cursor-pointer"
+                              className="text-left hover:text-violet-200 transition-colors cursor-pointer"
                             >
                               {series.title}
                             </button>
@@ -1455,7 +1664,7 @@ export const BrowseSourcesView: React.FC<BrowseSourcesViewProps> = ({
                     </div>
 
                     {/* Card Footer Actions */}
-                    <div className="px-4 py-2.5 bg-[#0B0F17]/90 border-t border-slate-800/80 flex items-center justify-between gap-2">
+                    <div className="px-4 py-2.5 bg-[#090A0F]/90 border-t border-white/[0.06] flex items-center justify-between gap-2">
                       {progress && onResumeSeries && (
                         <button
                           type="button"
@@ -1470,7 +1679,7 @@ export const BrowseSourcesView: React.FC<BrowseSourcesViewProps> = ({
                       <button
                         type="button"
                         onClick={() => onInspectSeries(seriesWithSource)}
-                        className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-lg transition-colors whitespace-nowrap cursor-pointer"
+                        className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-violet-500 hover:bg-violet-400 text-white text-xs font-semibold rounded-lg transition-colors whitespace-nowrap cursor-pointer"
                       >
                         <BookOpen className="w-3.5 h-3.5" />
                         <span>Manga Page ({series.totalChapters} Ch)</span>
@@ -1478,7 +1687,7 @@ export const BrowseSourcesView: React.FC<BrowseSourcesViewProps> = ({
                       <button
                         type="button"
                         onClick={() => onReadSeriesOnSource(series, effectiveSourceId)}
-                        className="flex items-center justify-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium rounded-lg border border-slate-700 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+                        className="flex items-center justify-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium rounded-lg border border-white/[0.1] transition-colors whitespace-nowrap shrink-0 cursor-pointer"
                       >
                         <Play className="w-3 h-3" />
                         <span>Ch. 1</span>
@@ -1494,7 +1703,7 @@ export const BrowseSourcesView: React.FC<BrowseSourcesViewProps> = ({
                 <button
                   type="button"
                   onClick={() => setVisibleCardsLimit((prev) => prev + 36)}
-                  className="px-4 py-2 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-white rounded-lg border border-slate-700 transition-colors cursor-pointer"
+                  className="px-4 py-2 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-white rounded-lg border border-white/[0.1] transition-colors cursor-pointer"
                 >
                   Show More Filtered Results ({filteredCatalog.length - visibleCardsLimit} remaining)
                 </button>
@@ -1502,7 +1711,7 @@ export const BrowseSourcesView: React.FC<BrowseSourcesViewProps> = ({
             )}
 
             {/* Pagination / Load More Live Data Bar */}
-            <div className="bg-[#0F1523] border border-slate-800 rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="bg-[#11121A] border border-white/[0.07] rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
               <div className="text-xs font-mono text-slate-400">
                 Showing {filteredCatalog.length} live series · Upstream Page {currentSourcePage}
               </div>
@@ -1510,7 +1719,7 @@ export const BrowseSourcesView: React.FC<BrowseSourcesViewProps> = ({
                 type="button"
                 onClick={handleLoadNextPage}
                 disabled={isLoadingLive}
-                className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-60 text-white text-xs font-semibold rounded-lg transition-colors"
+                className="flex items-center gap-2 px-4 py-2 bg-violet-500 hover:bg-violet-400 disabled:opacity-60 text-white text-xs font-semibold rounded-lg transition-colors"
               >
                 {isLoadingLive && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
                 <span>

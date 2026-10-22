@@ -15,7 +15,31 @@ export {
 };
 export const FMD2_SOURCE_MODULES: FmdSourceModule[] = ALL_FMD2_SOURCES;
 
-export type ArchiveFormat = 'CBZ' | 'PDF' | 'EPUB' | 'ZIP' | 'FOLDER';
+export type ArchiveFormat = 'CBZ' | 'ZIP';
+
+export type LiveSourceBrowseOutcomeKind =
+  | 'success'
+  | 'empty'
+  | 'timeout'
+  | 'http_error'
+  | 'network_error'
+  | 'parse_error'
+  | 'unsupported';
+
+export interface LiveSourceBrowseOutcome {
+  sourceId: SourceId;
+  outcome: LiveSourceBrowseOutcomeKind;
+  latencyMs: number;
+  resultCount: number;
+  cached: boolean;
+  stale: boolean;
+  fetchedAt?: string;
+  message: string;
+}
+
+export function isArchiveFormat(value: unknown): value is ArchiveFormat {
+  return value === 'CBZ' || value === 'ZIP';
+}
 
 export type ReadingMode =
   | 'single'
@@ -265,6 +289,7 @@ export interface DownloadTask {
   chapterId: string;
   chapterNumber: number;
   chapterTitle: string;
+  externalId?: string;
   sourceId: SourceId;
   luaModule: string;
   format: ArchiveFormat;
@@ -1985,7 +2010,7 @@ export function enqueueChaptersForDownload(
 
   const sourceMod = FMD2_SOURCE_MAP.get(sourceId) || FMD2_SOURCE_MODULES[0];
   const luaModule = sourceMod?.luaModule || 'lua/modules/WeebCentral.lua';
-  const ext = format === 'FOLDER' ? 'zip' : format.toLowerCase();
+  const ext = format.toLowerCase();
   const safeSeriesName = series.title.replace(/[^a-zA-Z0-9_-]+/g, '_');
 
   const newTasks: DownloadTask[] = missing.map((ch, idx) => {

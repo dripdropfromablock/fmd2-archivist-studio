@@ -151,7 +151,7 @@ export function collectWorkspaceReleaseFiles(rootDir: string): GitHubReleaseFile
 
   const readmeContent = `# FMD2 Archivist Studio — Live Multi-Source Manga Reader & Downloader
 
-A live multi-source manga & manhwa reader, source browser, and CBZ/PDF/EPUB batch archivist built around real FMD2 Lua connectors (\`WeebCentral\`, \`AsuraScans\`, \`MangaDex\`, \`LikeManga\`, \`MangaKatana\`, and 600+ FMD2 repository modules).
+A live manga & manhwa reader, source browser, and CBZ/ZIP chapter archiver built around five live FMD2 source adapters and the wider FMD2 connector catalogue.
 
 ## Quick Start
 
@@ -163,7 +163,7 @@ npm run dev
 ## Features
 - **Browse Sources Home Workspace**: Filter by Genre, Status (\`Ongoing\`, \`Completed\`, \`Hiatus\`), Sort by (\`Popularity\`, \`Newest\`, \`Alphabetical\`, \`Rating\`, \`Most Chapters\`), Format, Demographic, and Minimum Chapters with custom interactive popover dropdown menus.
 - **Full-Screen Manga & Webtoon Reader**: Auto-detects Webtoon Long-Strip vs. Single/Double-Page RTL Manga with custom optical filters, auto-scroll, and keyboard navigation.
-- **Batch CBZ / PDF / EPUB Downloader**: Real PKZIP \`ComicInfo.xml\` packaging and multi-threaded queue controls.
+- **Batch CBZ / ZIP Downloader**: Real PKZIP packaging, optional CBZ \`ComicInfo.xml\` metadata, and concurrent queue controls.
 `;
 
   if (!files.some((f) => f.relativePath.toLowerCase() === 'readme.md')) {
@@ -763,12 +763,9 @@ export async function publishReleaseToGitHub(
     }
   }
 
-  // If the current environment token is Read-Only, start a Device Flow session so all 32 code files and the release are pushed automatically as soon as the 8-digit code is confirmed on GitHub
+  // If the current environment token is Read-Only, start a Device Flow session so the standalone repo can be created & published automatically once the 8-digit code is confirmed, and provide the non-404 URL
   if (!releaseData) {
     const autoDeviceFlow = await startGitHubDeviceFlow();
-    if (autoDeviceFlow.ok && autoDeviceFlow.deviceCode) {
-      startServerBackgroundDevicePoll(rootDir, autoDeviceFlow.deviceCode, req);
-    }
     return {
       ok: true,
       publishMode: 'staged_ready',
@@ -786,8 +783,8 @@ export async function publishReleaseToGitHub(
       zipAssetUrl: `/api/github/release-bundle?tag=${encodeURIComponent(cleanTag)}`,
       deviceFlow: autoDeviceFlow.ok ? autoDeviceFlow : undefined,
       notice: repoExists
-        ? `Your environment token is Read-Only, so "${owner}/${targetRepo}" currently only has the initial README. Click "Push All ${workspaceFiles.length} Code Files to GitHub (Code: ${autoDeviceFlow.userCode || ''})" below and enter the 8-character code on GitHub to upload the full codebase and publish ${cleanTag}.`
-        : `Standalone repository "${owner}/${targetRepo}" does not exist on GitHub yet and your environment token is Read-Only. Enter the 8-character Device Code above to automatically create "${owner}/${targetRepo}", upload all ${workspaceFiles.length} files (including README.md with FMD2 credits), and publish ${cleanTag}.`,
+        ? `Release ${cleanTag} (${workspaceFiles.length} source files + README.md) is staged for ${owner}/${targetRepo}. Enter the 8-character Device Code above to push via API, or click "Confirm & Publish on GitHub.com" below.`
+        : `Standalone repository "${owner}/${targetRepo}" does not exist on GitHub yet and your environment token is Read-Only. Enter the 8-character Device Code above to automatically create "${owner}/${targetRepo}", upload all ${workspaceFiles.length} files (including README.md with FMD2 credits), and publish ${cleanTag} — OR click "Step 1: Create Standalone Repo on GitHub.com" below.`,
     };
   }
 
@@ -833,36 +830,3 @@ export async function publishReleaseToGitHub(
     zipAssetUrl,
   };
 }
-
-let activeBackgroundDeviceCode: string | null = null;
-
-export function startServerBackgroundDevicePoll(
-  rootDir: string,
-  deviceCode: string,
-  req: GitHubReleasePublishRequest
-): void {
-  if (activeBackgroundDeviceCode === deviceCode) return;
-  activeBackgroundDeviceCode = deviceCode;
-
-  let attempts = 0;
-  const timer = setInterval(async () => {
-    attempts += 1;
-    if (attempts > 120 || activeBackgroundDeviceCode !== deviceCode) {
-      clearInterval(timer);
-      return;
-    }
-    try {
-      const poll = await pollGitHubDeviceFlowToken(deviceCode);
-      if (poll.status === 'authorized' && poll.token) {
-        clearInterval(timer);
-        setGitHubOAuthToken(poll.token);
-        await publishReleaseToGitHub(rootDir, poll.token, req);
-      } else if (poll.status === 'expired') {
-        clearInterval(timer);
-      }
-    } catch {
-      // Ignore transient poll errors
-    }
-  }, 5500);
-}
-

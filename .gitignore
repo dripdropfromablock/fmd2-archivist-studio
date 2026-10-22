@@ -4,5 +4,6 @@ dist/
 .env.local
 .env.*.local
 .aistudio/
+.fmd2-data/
 public/assets/aistudio/
 *.log

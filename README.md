@@ -1,6 +1,6 @@
 # FMD2 Archivist Studio
 
-> **A standalone multi-source manga & webtoon reader, catalog browser, and batch CBZ / PDF / EPUB archivist built on top of the [Free Manga Downloader 2 (FMD2)](https://github.com/dazedcat19/FMD2) connector ecosystem.**
+> **A standalone manga and webtoon reader, live source browser, and CBZ / ZIP chapter archiver built around five live FMD2 source adapters and the broader FMD2 connector catalogue.**
 
 ---
 
@@ -10,10 +10,10 @@
 
 ### Key Capabilities
 
-- **Browse Sources Primary Workspace**: Live catalog browsing across `WeebCentral`, `AsuraScans`, `MangaDex`, `LikeManga`, `MangaKatana`, and 600+ verified FMD2 Lua source descriptors.
+- **Browse Sources Primary Workspace**: Live catalog browsing across `WeebCentral`, `AsuraScans`, `MangaDex`, `LikeManga`, and `MangaKatana`, with additional FMD2 Lua connector descriptors clearly separated from live adapters.
 - **Interactive Header & Filter Deck Dropdowns**: Filter and sort live catalogs by **Genre**, **Status** (`Ongoing`, `Completed`, `Hiatus`), **Sort by** (`Popularity`, `Newest`, `Alphabetical`, `Rating`, `Most Chapters`), **Format**, **Demographic**, and **Minimum Chapters** using accessible custom popover dropdown menus with live search and item counts.
 - **Adaptive Manga & Webtoon Reader**: Automatically detects **Webtoon Long-Strip** vs. **Single-Page / Double-Page RTL Manga** layouts based on series metadata, complete with optical image filters (contrast, warmth, sharpen, grayscale), auto-scroll, and keyboard navigation.
-- **Batch CBZ / PDF / EPUB Archivist Engine**: Multi-threaded download queue with range selection (`1-25`, `10+`), automatic missing-chapter detection, and real PKZIP `.cbz` packaging with embedded `ComicInfo.xml` metadata.
+- **Batch CBZ / ZIP Archivist Engine**: Concurrent page downloads with range selection (`1-25`, `10+`), automatic missing-chapter detection, and real PKZIP packaging. CBZ exports include `ComicInfo.xml` metadata.
 - **Cross-Device Cloud Sync & Read Later Queue**: Deterministic reading history synchronization, chapter progression heatmaps, and a dedicated Read Later queue.
 
 ---
@@ -21,7 +21,7 @@
 ## Quick Start
 
 ### Prerequisites
-- **Node.js** 18+ and **npm**
+- **Node.js** 20.19+ or 22.12+ and **npm** (required by the project's Vite 8 version)
 
 ### Installation & Local Development
 
@@ -45,6 +45,10 @@ npm test
 # Build for production
 npm run build
 ```
+
+### Server Data and Deployment
+
+The server stores download archives, queue state, and reading-sync profiles in `.fmd2-data/` by default. Set `FMD_DATA_DIR` to a durable directory in deployments where local files do not survive restarts. The current file-backed queue and sync store are designed for a single server instance; horizontal scaling needs a coordinated database and queue. For production, the server listens on all interfaces by default so a platform ingress can reach it; keep it behind a trusted ingress. Image-proxy signatures use a per-process key unless `IMAGE_PROXY_SIGNING_KEY` is configured, so multi-instance deployments must provide the same key to every instance.
 
 ---
 

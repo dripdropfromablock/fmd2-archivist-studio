@@ -21,7 +21,7 @@ export interface BrowserDownloadResult {
 export async function triggerBrowserFileDownload(
   task: Pick<DownloadTask, 'id' | 'mangaTitle' | 'chapterNumber' | 'format'>
 ): Promise<BrowserDownloadResult> {
-  const ext = task.format === 'FOLDER' ? 'zip' : task.format.toLowerCase();
+  const ext = task.format.toLowerCase();
   const fallbackName = `${task.mangaTitle.replace(/[^a-zA-Z0-9_-]+/g, '_')}_Ch_${String(
     task.chapterNumber
   ).padStart(3, '0')}.${ext}`;
@@ -72,8 +72,8 @@ export async function triggerBrowserFileDownload(
 }
 
 /**
- * Enqueues chapters in the FMD2 server engine, packs them immediately, and triggers
- * browser file downloads for the user.
+ * Enqueues chapters in the FMD2 server engine and optionally waits for completed
+ * archives to trigger browser file downloads for the user.
  */
 export async function enqueueAndDownloadChapters(params: {
   series: Pick<MangaSeries, 'id' | 'title'>;
@@ -97,7 +97,6 @@ export async function enqueueAndDownloadChapters(params: {
         chapters: params.chapters,
         sourceId: params.sourceId,
         format: params.format,
-        completeImmediately: true,
       }),
     });
 

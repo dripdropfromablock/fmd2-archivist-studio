@@ -1,5 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import {
   ALL_FMD2_SOURCES,
   DEFAULT_ENABLED_SOURCE_IDS,
@@ -1124,7 +1127,7 @@ test('sortSeriesChapters orders chapters by Newest First, Oldest First, and Unre
   );
 });
 
-test('Cloud Sync helpers merge multi-device reading histories deterministically and persist via fmdEngine', async () => {
+test('Cloud Sync helpers merge multi-device reading histories deterministically and persist via fmdEngine', async (t) => {
   const {
     normalizeCloudSyncKey,
     mergeReadingHistories,
@@ -1132,6 +1135,14 @@ test('Cloud Sync helpers merge multi-device reading histories deterministically 
     hasUnsyncedReadingChanges,
     DEFAULT_CLOUD_SYNC_KEY,
   } = await import('./fmdLogic.ts');
+  const previousDataDir = process.env.FMD_DATA_DIR;
+  const testDataDir = mkdtempSync(join(tmpdir(), 'fmd2-cloud-sync-test-'));
+  process.env.FMD_DATA_DIR = testDataDir;
+  t.after(() => {
+    if (previousDataDir === undefined) delete process.env.FMD_DATA_DIR;
+    else process.env.FMD_DATA_DIR = previousDataDir;
+    rmSync(testDataDir, { recursive: true, force: true });
+  });
   const { fmdEngine } = await import('../server/fmdEngine.ts');
 
   assert.equal(normalizeCloudSyncKey(''), DEFAULT_CLOUD_SYNC_KEY);

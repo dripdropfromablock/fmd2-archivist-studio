@@ -8,7 +8,13 @@ import {
   type BrowseStatusFilter,
   type BrowseFormatFilter,
   type BrowseDemographicFilter,
+  type LiveSourceBrowseOutcome,
+  type LiveSourceBrowseOutcomeKind,
 } from '../utils/fmdLogic.ts';
+import {
+  IMAGE_PROXY_SIGNATURE_TTL_MS,
+  signImageProxyRequest,
+} from './imageProxySecurity.ts';
 
 const BROWSER_UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36';
@@ -43,10 +49,59 @@ export interface LiveBrowseParams {
   minChapters?: number;
   page?: number;
   forceRefresh?: boolean;
+  /** Internal fetch seam used by deterministic adapter tests. */
+  fetcher?: typeof fetch;
+  /** Internal switch that lets the unified browse route observe adapter failures. */
+  reportFailures?: boolean;
+}
+
+export interface LiveBrowseResult {
+  results: MangaSeries[];
+  /** Sources for which this request attempted a live query. */
+  sourcesQueried: SourceId[];
+  sourceOutcomes: LiveSourceBrowseOutcome[];
+}
+
+class LiveSourceFailure extends Error {
+  constructor(
+    readonly outcome: LiveSourceBrowseOutcomeKind,
+    message: string
+  ) {
+    super(message);
+    this.name = 'LiveSourceFailure';
+  }
+}
+
+function normalizeLiveSourceFailure(error: unknown): LiveSourceFailure {
+  if (error instanceof LiveSourceFailure) return error;
+  const name = error instanceof Error ? error.name : '';
+  if (name === 'TimeoutError' || name === 'AbortError') {
+    return new LiveSourceFailure('timeout', 'The upstream source timed out.');
+  }
+  if (error instanceof SyntaxError) {
+    return new LiveSourceFailure('parse_error', 'The upstream response could not be parsed.');
+  }
+  return new LiveSourceFailure('network_error', 'The upstream source could not be reached.');
+}
+
+function isRecognizedEmptyPage(html: string): boolean {
+  return /\b(?:no results?|no (?:manga|comics|series|titles?) found|nothing found|0 results)\b/i.test(
+    stripHtmlTags(html)
+  );
+}
+
+function throwForUnrecognizedEmptyPage(sourceId: SourceId, html: string): void {
+  if (!isRecognizedEmptyPage(html)) {
+    throw new LiveSourceFailure(
+      'parse_error',
+      `The ${sourceId} response did not match the expected result or empty-state markup.`
+    );
+  }
 }
 
 // In-memory cache to keep repeated searches, browse pages & chapter loads fast
-const browseCache = new Map<string, { expires: number; results: MangaSeries[] }>();
+const browseCache = new Map<string, { expires: number; result: LiveBrowseResult }>();
+const sourceBrowseCache = new Map<string, { results: MangaSeries[]; fetchedAt: string }>();
 const searchCache = new Map<string, { expires: number; results: MangaSeries[] }>();
 const chaptersCache = new Map<string, { expires: number; chapters: MangaChapter[] }>();
 const pagesCache = new Map<string, { expires: number; data: LiveChapterPageResult }>();
@@ -90,7 +145,11 @@ export function stripHtmlTags(input: string): string {
 }
 
 export function buildProxiedImageUrl(targetUrl: string, referer: string): string {
-  return `/api/proxy/image?url=${encodeURIComponent(targetUrl)}&referer=${encodeURIComponent(referer)}`;
+  const expiresAt = Date.now() + IMAGE_PROXY_SIGNATURE_TTL_MS;
+  const signature = signImageProxyRequest(targetUrl, referer, expiresAt);
+  return `/api/proxy/image?url=${encodeURIComponent(targetUrl)}&referer=${encodeURIComponent(
+    referer
+  )}&expires=${expiresAt}&signature=${signature}`;
 }
 
 // ============================================================================
@@ -98,7 +157,8 @@ export function buildProxiedImageUrl(targetUrl: string, referer: string): string
 // ============================================================================
 
 export async function getWeebCentralChapters(
-  wcSeriesIdOrTitle: string
+  wcSeriesIdOrTitle: string,
+  fetcher: typeof fetch = fetch
 ): Promise<MangaChapter[]> {
   const cacheKey = `wc-ch:${wcSeriesIdOrTitle.toLowerCase()}`;
   const cached = chaptersCache.get(cacheKey);
@@ -109,7 +169,7 @@ export async function getWeebCentralChapters(
   try {
     let seriesId = wcSeriesIdOrTitle.replace(/^wc-/i, '');
     if (!/^[0-9A-Z]{20,}$/i.test(seriesId)) {
-      const searchRes = await fetch('https://weebcentral.com/search/simple?location=main', {
+      const searchRes = await fetcher('https://weebcentral.com/search/simple?location=main', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
@@ -135,7 +195,7 @@ export async function getWeebCentralChapters(
       return [];
     }
 
-    const chRes = await fetch(`https://weebcentral.com/series/${seriesId}/full-chapter-list`, {
+    const chRes = await fetcher(`https://weebcentral.com/series/${seriesId}/full-chapter-list`, {
       headers: {
         'HX-Request': 'true',
         'User-Agent': BROWSER_UA,
@@ -195,6 +255,7 @@ export async function getWeebCentralChapters(
 
 export async function browseWeebCentralLive(params: LiveBrowseParams = {}): Promise<MangaSeries[]> {
   try {
+    const fetcher = params.fetcher || fetch;
     const page = Math.max(1, params.page || 1);
     const limit = 20;
     const offset = (page - 1) * limit;
@@ -231,7 +292,7 @@ export async function browseWeebCentralLive(params: LiveBrowseParams = {}): Prom
       urlParams.set('included_type', params.format === 'Webtoon' ? 'Manhwa' : params.format);
     }
 
-    const res = await fetch(`https://weebcentral.com/search/data?${urlParams.toString()}`, {
+    const res = await fetcher(`https://weebcentral.com/search/data?${urlParams.toString()}`, {
       headers: {
         'User-Agent': BROWSER_UA,
         Referer: 'https://weebcentral.com/search',
@@ -240,7 +301,9 @@ export async function browseWeebCentralLive(params: LiveBrowseParams = {}): Prom
       signal: AbortSignal.timeout(5500),
     });
 
-    if (!res.ok) return [];
+    if (!res.ok) {
+      throw new LiveSourceFailure('http_error', `WeebCentral returned HTTP ${res.status}.`);
+    }
     const html = await res.text();
     const blocks = html.split(/<article\s+class="bg-base-300\s+flex\s+gap-4\s+p-4">/i).slice(1);
 
@@ -327,9 +390,13 @@ export async function browseWeebCentralLive(params: LiveBrowseParams = {}): Prom
       });
     }
 
+    if (parsedCards.length === 0) {
+      throwForUnrecognizedEmptyPage('weebcentral', html);
+    }
+
     // Fetch real chapter lists in parallel so every WeebCentral series has its true chapter count & real chapters
     const chapterLists = await Promise.all(
-      parsedCards.map((card) => getWeebCentralChapters(card.wcSeriesId))
+      parsedCards.map((card) => getWeebCentralChapters(card.wcSeriesId, fetcher))
     );
 
     const results: MangaSeries[] = [];
@@ -375,7 +442,8 @@ export async function browseWeebCentralLive(params: LiveBrowseParams = {}): Prom
     }
 
     return results;
-  } catch {
+  } catch (error) {
+    if (params.reportFailures) throw normalizeLiveSourceFailure(error);
     return [];
   }
 }
@@ -445,6 +513,7 @@ function unwrapAstroProps(v: any): any {
 
 export async function browseAsuraScansLive(params: LiveBrowseParams = {}): Promise<MangaSeries[]> {
   try {
+    const fetcher = params.fetcher || fetch;
     const page = Math.max(1, params.page || 1);
     const urlParams = new URLSearchParams({
       page: String(page),
@@ -466,7 +535,7 @@ export async function browseAsuraScansLive(params: LiveBrowseParams = {}): Promi
     else if (params.sortBy === 'title') order = 'title';
     urlParams.set('order', order);
 
-    const res = await fetch(`https://asurascans.com/browse/comics?${urlParams.toString()}`, {
+    const res = await fetcher(`https://asurascans.com/browse/comics?${urlParams.toString()}`, {
       headers: {
         'User-Agent': BROWSER_UA,
         Referer: 'https://asurascans.com/',
@@ -474,11 +543,15 @@ export async function browseAsuraScansLive(params: LiveBrowseParams = {}): Promi
       signal: AbortSignal.timeout(6000),
     });
 
-    if (!res.ok) return [];
+    if (!res.ok) {
+      throw new LiveSourceFailure('http_error', `Asura Scans returned HTTP ${res.status}.`);
+    }
     const html = await res.text();
 
     const islands = [...html.matchAll(/props="([^"]+)"/gi)];
     let rawSeriesList: any[] = [];
+    let foundInitialSeriesArray = false;
+    let initialSeriesParseFailed = false;
 
     for (const m of islands) {
       const rawJson = decodeHtmlEntities(m[1]);
@@ -487,12 +560,20 @@ export async function browseAsuraScansLive(params: LiveBrowseParams = {}): Promi
           const parsed = unwrapAstroProps(JSON.parse(rawJson));
           if (Array.isArray(parsed?.initialSeries)) {
             rawSeriesList = parsed.initialSeries;
+            foundInitialSeriesArray = true;
             break;
           }
         } catch {
-          // Continue looking
+          initialSeriesParseFailed = true;
         }
       }
+    }
+
+    if (!foundInitialSeriesArray && (initialSeriesParseFailed || !isRecognizedEmptyPage(html))) {
+      throw new LiveSourceFailure(
+        'parse_error',
+        'The Asura Scans response did not contain a valid series list or empty-state marker.'
+      );
     }
 
     const mapped: MangaSeries[] = [];
@@ -602,8 +683,13 @@ export async function browseAsuraScansLive(params: LiveBrowseParams = {}): Promi
       });
     }
 
+    if (rawSeriesList.length > 0 && mapped.length === 0) {
+      throw new LiveSourceFailure('parse_error', 'The Asura Scans series payload could not be mapped.');
+    }
+
     return mapped;
-  } catch {
+  } catch (error) {
+    if (params.reportFailures) throw normalizeLiveSourceFailure(error);
     return [];
   }
 }
@@ -803,6 +889,7 @@ export async function getMangaDexChapters(mangaIdOrTitle: string): Promise<Manga
 
 export async function browseMangaDexLive(params: LiveBrowseParams = {}): Promise<MangaSeries[]> {
   try {
+    const fetcher = params.fetcher || fetch;
     const page = Math.max(1, params.page || 1);
     const limit = 20;
     const offset = (page - 1) * limit;
@@ -850,14 +937,19 @@ export async function browseMangaDexLive(params: LiveBrowseParams = {}): Promise
     }
 
     const url = `https://api.mangadex.org/manga?${queryParts.join('&')}`;
-    const response = await fetch(url, {
+    const response = await fetcher(url, {
       headers: { 'User-Agent': 'FMD2-Studio/2.0' },
       signal: AbortSignal.timeout(5000),
     });
 
-    if (!response.ok) return [];
+    if (!response.ok) {
+      throw new LiveSourceFailure('http_error', `MangaDex returned HTTP ${response.status}.`);
+    }
     const data = (await response.json()) as any;
-    const items = Array.isArray(data?.data) ? data.data : [];
+    if (!Array.isArray(data?.data)) {
+      throw new LiveSourceFailure('parse_error', 'The MangaDex response did not contain a data array.');
+    }
+    const items = data.data;
 
     const results: MangaSeries[] = [];
     for (let idx = 0; idx < items.length; idx++) {
@@ -975,8 +1067,12 @@ export async function browseMangaDexLive(params: LiveBrowseParams = {}): Promise
       });
     }
 
+    if (items.length > 0 && results.length === 0) {
+      throw new LiveSourceFailure('parse_error', 'The MangaDex manga list could not be mapped.');
+    }
     return results;
-  } catch {
+  } catch (error) {
+    if (params.reportFailures) throw normalizeLiveSourceFailure(error);
     return [];
   }
 }
@@ -1043,6 +1139,7 @@ export async function getMangaDexChapterPages(
 
 export async function browseLikeMangaLive(params: LiveBrowseParams = {}): Promise<MangaSeries[]> {
   try {
+    const fetcher = params.fetcher || fetch;
     const page = Math.max(1, params.page || 1);
     const statusParam =
       params.status === 'Completed'
@@ -1054,7 +1151,7 @@ export async function browseLikeMangaLive(params: LiveBrowseParams = {}): Promis
     const keyword = params.query ? encodeURIComponent(params.query.trim()) : '';
 
     const searchUrl = `https://likemanga.ink/?act=search&f[status]=${statusParam}&f[sortby]=${sortParam}&f[keyword]=${keyword}&pageNum=${page}`;
-    const res = await fetch(searchUrl, {
+    const res = await fetcher(searchUrl, {
       headers: {
         'User-Agent': BROWSER_UA,
         Referer: 'https://likemanga.ink/',
@@ -1062,10 +1159,13 @@ export async function browseLikeMangaLive(params: LiveBrowseParams = {}): Promis
       signal: AbortSignal.timeout(5500),
     });
 
-    if (!res.ok) return [];
+    if (!res.ok) {
+      throw new LiveSourceFailure('http_error', `LikeManga returned HTTP ${res.status}.`);
+    }
     const html = await res.text();
 
     const cardBlocks = html.split(/<div class="col-lg-3 col-md-4 col-sm-4 col-6/i).slice(1);
+    if (cardBlocks.length === 0) throwForUnrecognizedEmptyPage('likemanga', html);
     const results: MangaSeries[] = [];
     const seenPaths = new Set<string>();
 
@@ -1194,8 +1294,13 @@ export async function browseLikeMangaLive(params: LiveBrowseParams = {}): Promis
       });
     }
 
+    if (cardBlocks.length > 0 && results.length === 0) {
+      throw new LiveSourceFailure('parse_error', 'The LikeManga result cards could not be mapped.');
+    }
+
     return results;
-  } catch {
+  } catch (error) {
+    if (params.reportFailures) throw normalizeLiveSourceFailure(error);
     return [];
   }
 }
@@ -1333,6 +1438,7 @@ export async function getLikeMangaChapterPages(
 
 export async function browseMangaKatanaLive(params: LiveBrowseParams = {}): Promise<MangaSeries[]> {
   try {
+    const fetcher = params.fetcher || fetch;
     const page = Math.max(1, params.page || 1);
     let targetUrl = `https://mangakatana.com/manga/page/${page}?filter=1&include_mode=and&order=popular`;
     if (params.query && params.query.trim()) {
@@ -1345,7 +1451,7 @@ export async function browseMangaKatanaLive(params: LiveBrowseParams = {}): Prom
       targetUrl = `https://mangakatana.com/manga/page/${page}?filter=1&include_mode=and&order=az`;
     }
 
-    const res = await fetch(targetUrl, {
+    const res = await fetcher(targetUrl, {
       headers: {
         'User-Agent': BROWSER_UA,
         Referer: 'https://mangakatana.com/',
@@ -1353,9 +1459,12 @@ export async function browseMangaKatanaLive(params: LiveBrowseParams = {}): Prom
       signal: AbortSignal.timeout(5500),
     });
 
-    if (!res.ok) return [];
+    if (!res.ok) {
+      throw new LiveSourceFailure('http_error', `MangaKatana returned HTTP ${res.status}.`);
+    }
     const html = await res.text();
     const items = html.split(/<div class="item"\s+data-genre=/i).slice(1);
+    if (items.length === 0) throwForUnrecognizedEmptyPage('mangakatana', html);
     const results: MangaSeries[] = [];
 
     for (let idx = 0; idx < items.length && results.length < 24; idx++) {
@@ -1489,8 +1598,13 @@ export async function browseMangaKatanaLive(params: LiveBrowseParams = {}): Prom
       });
     }
 
+    if (items.length > 0 && results.length === 0) {
+      throw new LiveSourceFailure('parse_error', 'The MangaKatana result cards could not be mapped.');
+    }
+
     return results;
-  } catch {
+  } catch (error) {
+    if (params.reportFailures) throw normalizeLiveSourceFailure(error);
     return [];
   }
 }
@@ -1605,33 +1719,11 @@ export async function getMangaKatanaChapterPages(
 // UNIFIED LIVE BROWSE & MULTI-SOURCE SEARCH ROUTERS
 // ============================================================================
 
-const inFlightBrowse = new Map<
-  string,
-  Promise<{ results: MangaSeries[]; sourcesQueried: SourceId[] }>
->();
+const inFlightBrowse = new Map<string, Promise<LiveBrowseResult>>();
 
-function withSourceTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
-  return new Promise<T>((resolve) => {
-    const timer = setTimeout(() => resolve(fallback), ms);
-    promise
-      .then((val) => {
-        clearTimeout(timer);
-        resolve(val);
-      })
-      .catch(() => {
-        clearTimeout(timer);
-        resolve(fallback);
-      });
-  });
-}
-
-export async function browseLiveFmdSources(params: LiveBrowseParams = {}): Promise<{
-  results: MangaSeries[];
-  sourcesQueried: SourceId[];
-}> {
-  const targetSource = params.sourceId || 'ALL';
-  const cacheKey = JSON.stringify({
-    s: targetSource,
+function makeBrowseCacheKey(sourceId: SourceId | 'ALL', params: LiveBrowseParams): string {
+  return JSON.stringify({
+    s: sourceId,
     q: (params.query || '').trim().toLowerCase(),
     sort: params.sortBy || 'popular',
     st: params.status || 'All',
@@ -1640,88 +1732,148 @@ export async function browseLiveFmdSources(params: LiveBrowseParams = {}): Promi
     minCh: params.minChapters || 0,
     p: params.page || 1,
   });
+}
+
+function mergeBrowseResults(sourceLists: MangaSeries[][]): MangaSeries[] {
+  const byNormTitle = new Map<string, MangaSeries>();
+  for (const item of sourceLists.flat()) {
+    const norm = item.title.toLowerCase().replace(/[^a-z0-9]+/g, '');
+    if (!norm) continue;
+    const existing = byNormTitle.get(norm);
+    if (existing) {
+      existing.availableSources = Array.from(new Set([...existing.availableSources, ...item.availableSources]));
+      if (item.chapters.length > existing.chapters.length) {
+        existing.chapters = item.chapters;
+        existing.totalChapters = Math.max(existing.totalChapters, item.totalChapters);
+      }
+    } else {
+      byNormTitle.set(norm, { ...item, availableSources: Array.from(new Set(item.availableSources)) });
+    }
+  }
+  return Array.from(byNormTitle.values());
+}
+
+const adapters = {
+  weebcentral: browseWeebCentralLive,
+  asurascans: browseAsuraScansLive,
+  mangadex: browseMangaDexLive,
+  likemanga: browseLikeMangaLive,
+  mangakatana: browseMangaKatanaLive,
+};
+
+async function queryLiveSource(
+  sourceId: SourceId,
+  params: LiveBrowseParams,
+  timeoutMs: number
+): Promise<{ results: MangaSeries[]; sourceOutcome: LiveSourceBrowseOutcome }> {
+  const cacheKey = makeBrowseCacheKey(sourceId, params);
+  const startedAt = Date.now();
+  const fetchedAt = new Date().toISOString();
+  const adapter = adapters[sourceId as keyof typeof adapters];
+
+  if (!adapter) {
+    return {
+      results: [],
+      sourceOutcome: {
+        sourceId,
+        outcome: 'http_error',
+        latencyMs: 0,
+        resultCount: 0,
+        cached: false,
+        stale: false,
+        fetchedAt,
+        message: 'No live adapter is registered for this source.',
+      },
+    };
+  }
+
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+  try {
+    const results = await Promise.race([
+      adapter({ ...params, sourceId, reportFailures: true }),
+      new Promise<MangaSeries[]>((_, reject) => {
+        timeout = setTimeout(
+          () => reject(new LiveSourceFailure('timeout', 'The upstream source timed out.')),
+          timeoutMs
+        );
+      }),
+    ]);
+    const currentFetchedAt = new Date().toISOString();
+    sourceBrowseCache.set(cacheKey, { results, fetchedAt: currentFetchedAt });
+    return {
+      results,
+      sourceOutcome: {
+        sourceId,
+        outcome: results.length > 0 ? 'success' : 'empty',
+        latencyMs: Date.now() - startedAt,
+        resultCount: results.length,
+        cached: false,
+        stale: false,
+        fetchedAt: currentFetchedAt,
+        message: results.length > 0 ? `Returned ${results.length} series.` : 'No results matched this query.',
+      },
+    };
+  } catch (error) {
+    const failure = normalizeLiveSourceFailure(error);
+    const stale = sourceBrowseCache.get(cacheKey);
+    const staleResults = stale?.results || [];
+    return {
+      results: staleResults,
+      sourceOutcome: {
+        sourceId,
+        outcome: failure.outcome,
+        latencyMs: Date.now() - startedAt,
+        resultCount: staleResults.length,
+        cached: staleResults.length > 0,
+        stale: staleResults.length > 0,
+        fetchedAt: stale?.fetchedAt || fetchedAt,
+        message:
+          staleResults.length > 0
+            ? `${failure.message} Showing ${staleResults.length} cached series.`
+            : failure.message,
+      },
+    };
+  } finally {
+    if (timeout) clearTimeout(timeout);
+  }
+}
+
+export async function browseLiveFmdSources(params: LiveBrowseParams = {}): Promise<LiveBrowseResult> {
+  const targetSource = params.sourceId || 'ALL';
+  if (targetSource !== 'ALL' && !DEFAULT_ENABLED_SOURCE_IDS.includes(targetSource)) {
+    return { results: [], sourcesQueried: [], sourceOutcomes: [] };
+  }
+  const cacheKey = makeBrowseCacheKey(targetSource, params);
 
   if (!params.forceRefresh) {
     const cached = browseCache.get(cacheKey);
     if (cached && cached.expires > Date.now()) {
       return {
-        results: cached.results,
-        sourcesQueried:
-          targetSource === 'ALL' ? DEFAULT_ENABLED_SOURCE_IDS : [targetSource],
+        ...cached.result,
+        sourceOutcomes: cached.result.sourceOutcomes.map((outcome) => ({ ...outcome, cached: true })),
       };
     }
 
     const existingInFlight = inFlightBrowse.get(cacheKey);
-    if (existingInFlight) {
-      return existingInFlight;
-    }
+    if (existingInFlight) return existingInFlight;
   }
 
-  const task = (async () => {
-    let results: MangaSeries[] = [];
-    let sourcesQueried: SourceId[] = [];
-
-    if (targetSource === 'weebcentral') {
-      sourcesQueried = ['weebcentral'];
-      results = await browseWeebCentralLive(params);
-    } else if (targetSource === 'asurascans') {
-      sourcesQueried = ['asurascans'];
-      results = await browseAsuraScansLive(params);
-    } else if (targetSource === 'mangadex') {
-      sourcesQueried = ['mangadex'];
-      results = await browseMangaDexLive(params);
-    } else if (targetSource === 'likemanga') {
-      sourcesQueried = ['likemanga'];
-      results = await browseLikeMangaLive(params);
-    } else if (targetSource === 'mangakatana') {
-      sourcesQueried = ['mangakatana'];
-      results = await browseMangaKatanaLive(params);
-    } else {
-      sourcesQueried =
-        targetSource === 'ALL' ? [...DEFAULT_ENABLED_SOURCE_IDS] : [targetSource];
-      const [wcList, asList, mdList, lmList, mkList] = await Promise.all([
-        withSourceTimeout(browseWeebCentralLive(params), 2800, []),
-        withSourceTimeout(browseAsuraScansLive(params), 2600, []),
-        withSourceTimeout(browseMangaDexLive(params), 2600, []),
-        withSourceTimeout(browseLikeMangaLive(params), 2600, []),
-        withSourceTimeout(browseMangaKatanaLive(params), 2600, []),
-      ]);
-
-      const byNormTitle = new Map<string, MangaSeries>();
-      for (const item of [...wcList, ...asList, ...mdList, ...lmList, ...mkList]) {
-        const norm = item.title.toLowerCase().replace(/[^a-z0-9]+/g, '');
-        if (!norm) continue;
-        const extraSources =
-          targetSource !== 'ALL'
-            ? [targetSource, ...item.availableSources]
-            : item.availableSources;
-        const existing = byNormTitle.get(norm);
-        if (existing) {
-          existing.availableSources = Array.from(
-            new Set([...existing.availableSources, ...extraSources])
-          );
-          if (item.chapters.length > existing.chapters.length) {
-            existing.chapters = item.chapters;
-            existing.totalChapters = Math.max(existing.totalChapters, item.totalChapters);
-          }
-        } else {
-          byNormTitle.set(norm, {
-            ...item,
-            availableSources: Array.from(new Set(extraSources)),
-          });
-        }
-      }
-      results = Array.from(byNormTitle.values());
-    }
+  const task = (async (): Promise<LiveBrowseResult> => {
+    const sourcesQueried =
+      targetSource === 'ALL' ? [...DEFAULT_ENABLED_SOURCE_IDS] : [targetSource];
+    const sourceResults = await Promise.all(
+      sourcesQueried.map((sourceId) =>
+        queryLiveSource(sourceId, params, targetSource === 'ALL' ? 2800 : 7000)
+      )
+    );
+    const results = mergeBrowseResults(sourceResults.map((entry) => entry.results));
+    const sourceOutcomes = sourceResults.map((entry) => entry.sourceOutcome);
+    const result: LiveBrowseResult = { results, sourcesQueried, sourceOutcomes };
 
     if (results.length > 0) {
-      browseCache.set(cacheKey, {
-        expires: Date.now() + 10 * 60 * 1000,
-        results,
-      });
+      browseCache.set(cacheKey, { expires: Date.now() + 10 * 60 * 1000, result });
     }
-
-    return { results, sourcesQueried };
+    return result;
   })();
 
   inFlightBrowse.set(cacheKey, task);
@@ -1795,6 +1947,8 @@ export async function resolveLiveChaptersForSeries(
   seriesSlugOrId?: string,
   seriesSlug?: string
 ): Promise<MangaChapter[]> {
+  if (!DEFAULT_ENABLED_SOURCE_IDS.includes(sourceId)) return [];
+
   if (sourceId === 'asurascans') {
     const asChaps = await getAsuraScansChapters(seriesSlugOrId || seriesTitle, seriesSlug);
     if (asChaps.length > 0) return asChaps;
@@ -1827,7 +1981,7 @@ export async function resolveLiveChaptersForSeries(
 }
 
 /**
- * Resolves real live chapter page images for reading or CBZ/PDF archive packaging
+ * Resolves live chapter page images for reading or CBZ/ZIP archive packaging
  */
 export async function resolveLiveChapterPages(params: {
   seriesTitle: string;
@@ -1835,6 +1989,19 @@ export async function resolveLiveChapterPages(params: {
   sourceId: SourceId;
   externalId?: string;
 }): Promise<LiveChapterPageResult> {
+  const mod =
+    ALL_FMD2_SOURCES.find((m) => m.id === params.sourceId) ||
+    ALL_FMD2_SOURCES.find((m) => m.id === 'weebcentral')!;
+  if (!DEFAULT_ENABLED_SOURCE_IDS.includes(params.sourceId)) {
+    return {
+      sourceId: params.sourceId,
+      luaModule: mod.luaModule,
+      chapterTitle: `Chapter ${params.chapterNumber}`,
+      pages: [],
+      rawUpstreamPages: [],
+    };
+  }
+
   const cacheKey = `${params.seriesTitle.toLowerCase()}::${params.chapterNumber}::${params.sourceId}::${
     params.externalId || ''
   }`;
@@ -1842,10 +2009,6 @@ export async function resolveLiveChapterPages(params: {
   if (cached && cached.expires > Date.now()) {
     return cached.data;
   }
-
-  const mod =
-    ALL_FMD2_SOURCES.find((m) => m.id === params.sourceId) ||
-    ALL_FMD2_SOURCES.find((m) => m.id === 'weebcentral')!;
 
   let rawUpstreamPages: { url: string; referer: string }[] = [];
 

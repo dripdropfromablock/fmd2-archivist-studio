@@ -239,9 +239,9 @@ export const ReadLaterQueueView: React.FC<ReadLaterQueueViewProps> = ({
   };
 
   return (
-    <div className="space-y-6 animate-view-enter" data-testid="read-later-queue-view">
+    <div className="space-y-6" data-testid="read-later-queue-view">
       {/* Header & Quick Add Panel */}
-      <section className="studio-panel bg-[#0F1523] border border-slate-800 rounded-xl p-5 space-y-4">
+      <section className="studio-panel bg-[#11121A] border border-white/[0.07] rounded-xl p-5 space-y-4">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div className="space-y-1">
             <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white font-display">
@@ -281,7 +281,7 @@ export const ReadLaterQueueView: React.FC<ReadLaterQueueViewProps> = ({
                 <button
                   type="button"
                   onClick={onClearQueue}
-                  className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium bg-[#0B0F17] hover:bg-rose-950/60 text-slate-300 hover:text-rose-200 border border-slate-800 hover:border-rose-700/50 rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+                  className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium bg-[#090A0F] hover:bg-rose-950/60 text-slate-300 hover:text-rose-200 border border-white/[0.07] hover:border-rose-700/50 rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer"
                 >
                   <Trash2 className="w-3.5 h-3.5 text-rose-400" />
                   <span>Clear Queue</span>
@@ -291,7 +291,7 @@ export const ReadLaterQueueView: React.FC<ReadLaterQueueViewProps> = ({
             <button
               type="button"
               onClick={onOpenReaderTab}
-              className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+              className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold bg-violet-600 hover:bg-violet-500 text-white rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer"
             >
               <BookOpen className="w-3.5 h-3.5" />
               <span>Open Manga Reader</span>
@@ -303,7 +303,7 @@ export const ReadLaterQueueView: React.FC<ReadLaterQueueViewProps> = ({
         {catalog.length > 0 && (
           <form
             onSubmit={handleQuickAddSubmit}
-            className="pt-3 border-t border-slate-800/80 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3"
+            className="pt-3 border-t border-white/[0.06] flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3"
           >
             <div className="flex items-center gap-2 text-xs text-slate-300">
               <Plus className="w-4 h-4 text-amber-400 shrink-0" />
@@ -366,7 +366,7 @@ export const ReadLaterQueueView: React.FC<ReadLaterQueueViewProps> = ({
       </section>
 
       {/* Queue Filter & Sort Toolbar + Chapter Queue List */}
-      <section className="studio-panel bg-[#0F1523] border border-slate-800 rounded-2xl p-6 space-y-5">
+      <section className="studio-panel bg-[#11121A] border border-white/[0.07] rounded-2xl p-6 space-y-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="relative flex-1 min-w-[220px] max-w-md">
             <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -376,7 +376,7 @@ export const ReadLaterQueueView: React.FC<ReadLaterQueueViewProps> = ({
               value={searchFilter}
               onChange={(e) => setSearchFilter(e.target.value)}
               placeholder="Filter queued chapters by series, chapter number, or group..."
-              className="w-full pl-10 pr-4 py-2 text-xs bg-[#0B0F17] border border-slate-800 rounded-lg text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500"
+              className="w-full pl-10 pr-4 py-2 text-xs bg-[#090A0F] border border-white/[0.07] rounded-lg text-white placeholder:text-slate-500 focus:outline-none focus:border-violet-500"
             />
           </div>
 
@@ -394,7 +394,7 @@ export const ReadLaterQueueView: React.FC<ReadLaterQueueViewProps> = ({
         </div>
 
         {filteredAndSortedQueue.length === 0 ? (
-          <div className="bg-[#0B0F17] border border-slate-800/90 rounded-xl p-10 text-center space-y-3">
+          <div className="bg-[#090A0F] border border-white/[0.07]/90 rounded-xl p-10 text-center space-y-3">
             <Clock className="w-8 h-8 text-amber-400 mx-auto" />
             <div className="text-base font-bold text-white font-display">
               {queue.length === 0
@@ -410,7 +410,7 @@ export const ReadLaterQueueView: React.FC<ReadLaterQueueViewProps> = ({
               <button
                 type="button"
                 onClick={onOpenReaderTab}
-                className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition-colors cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold bg-violet-600 hover:bg-violet-500 text-white rounded-lg transition-colors cursor-pointer"
               >
                 <BookOpen className="w-3.5 h-3.5" />
                 <span>Go to Manga Reader</span>
@@ -418,7 +418,7 @@ export const ReadLaterQueueView: React.FC<ReadLaterQueueViewProps> = ({
               <button
                 type="button"
                 onClick={onOpenCatalogTab}
-                className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg border border-slate-700 transition-colors cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg border border-white/[0.1] transition-colors cursor-pointer"
               >
                 <Layers className="w-3.5 h-3.5" />
                 <span>Browse Sources</span>
@@ -444,7 +444,8 @@ export const ReadLaterQueueView: React.FC<ReadLaterQueueViewProps> = ({
                   key={item.id}
                   role="listitem"
                   data-testid={`read-later-item-${item.seriesId}-${item.chapterNumber}`}
-                  className="p-4 rounded-xl bg-[#0B0F17] border border-slate-800/90 hover:border-slate-700 transition-all flex flex-col lg:flex-row lg:items-center justify-between gap-4"
+                  className="animate-card-enter queue-card-interactive p-4 rounded-xl bg-[#090A0F] border border-white/[0.07]/90 hover:border-white/[0.1] transition-all flex flex-col lg:flex-row lg:items-center justify-between gap-4"
+                  style={{ '--stagger-idx': idx } as React.CSSProperties}
                 >
                   <div className="flex items-start sm:items-center gap-3.5 min-w-0">
                     {/* Queue Index & Reorder Controls */}
@@ -483,7 +484,7 @@ export const ReadLaterQueueView: React.FC<ReadLaterQueueViewProps> = ({
                       <button
                         type="button"
                         onClick={() => onInspectSeries(matchedSeries)}
-                        className="w-12 h-16 rounded-lg overflow-hidden border border-slate-800 shrink-0 cursor-pointer"
+                        className="w-12 h-16 rounded-lg overflow-hidden border border-white/[0.07] shrink-0 cursor-pointer"
                         title={`Inspect ${matchedSeries.title}`}
                       >
                         <MangaCoverArt series={matchedSeries} className="w-full h-full" />
@@ -497,7 +498,7 @@ export const ReadLaterQueueView: React.FC<ReadLaterQueueViewProps> = ({
                           <button
                             type="button"
                             onClick={() => onInspectSeries(matchedSeries)}
-                            className="text-sm font-bold text-white hover:text-indigo-400 font-display truncate transition-colors cursor-pointer text-left"
+                            className="text-sm font-bold text-white hover:text-violet-400 font-display truncate transition-colors cursor-pointer text-left"
                           >
                             {item.seriesTitle}
                           </button>
@@ -515,7 +516,7 @@ export const ReadLaterQueueView: React.FC<ReadLaterQueueViewProps> = ({
 
                         <span aria-hidden="true" className="text-slate-600">·</span>
 
-                        <span className="font-mono text-indigo-400">
+                        <span className="font-mono text-violet-400">
                           {sourceMeta?.name || item.sourceId}
                         </span>
 
@@ -524,9 +525,9 @@ export const ReadLaterQueueView: React.FC<ReadLaterQueueViewProps> = ({
                             <span aria-hidden="true" className="text-slate-600">·</span>
                             <span
                               title="This series is also in your Saved Library bookmarks"
-                              className="inline-flex items-center gap-1 font-mono text-indigo-300"
+                              className="inline-flex items-center gap-1 font-mono text-violet-300"
                             >
-                              <Bookmark className="w-3 h-3 fill-indigo-400 text-indigo-400" />
+                              <Bookmark className="w-3 h-3 fill-violet-400 text-violet-400" />
                               <span>Bookmarked</span>
                             </span>
                           </>
@@ -561,7 +562,7 @@ export const ReadLaterQueueView: React.FC<ReadLaterQueueViewProps> = ({
                     <button
                       type="button"
                       onClick={() => onReadQueuedChapter(item, false)}
-                      className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold bg-violet-600 hover:bg-violet-500 text-white rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer"
                     >
                       <BookOpen className="w-3.5 h-3.5" />
                       <span>
@@ -599,7 +600,7 @@ export const ReadLaterQueueView: React.FC<ReadLaterQueueViewProps> = ({
                       onClick={() => onRemoveFromQueue(item.id)}
                       aria-label={`Remove ${item.seriesTitle} Chapter ${item.chapterNumber} from Read Later`}
                       title="Remove from Read Later Queue"
-                      className="p-2 text-slate-400 hover:text-rose-300 bg-slate-900 hover:bg-rose-950/50 border border-slate-800 hover:border-rose-700/50 rounded-lg transition-colors cursor-pointer"
+                      className="p-2 text-slate-400 hover:text-rose-300 bg-slate-900 hover:bg-rose-950/50 border border-white/[0.07] hover:border-rose-700/50 rounded-lg transition-colors cursor-pointer"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>

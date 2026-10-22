@@ -61,7 +61,7 @@ export const SmartDiscoveryView: React.FC<SmartDiscoveryViewProps> = ({
 
   return (
     <div className="space-y-8">
-      <section className="bg-[#0F1523] border border-slate-800 rounded-xl p-6 space-y-4">
+      <section className="bg-[#11121A] border border-white/[0.07] rounded-xl p-6 space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
             <h2 className="text-xl font-bold text-white font-display">
@@ -71,7 +71,7 @@ export const SmartDiscoveryView: React.FC<SmartDiscoveryViewProps> = ({
               Powered by server-side Gemini 4 Argon with High Thinking mode for complex reading order, scanlation source selection, and thematic cross-referencing.
             </p>
           </div>
-          <div className="text-xs font-mono text-indigo-300">
+          <div className="text-xs font-mono text-violet-300">
             Model: gemini-4-argon · ThinkingLevel.HIGH
           </div>
         </div>
@@ -86,7 +86,7 @@ export const SmartDiscoveryView: React.FC<SmartDiscoveryViewProps> = ({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Ask about complex reading orders, best scanlation sources, or thematic similarities..."
-            className="w-full p-3.5 text-sm bg-[#0B0F17] border border-slate-800 rounded-lg text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-indigo-500"
+            className="w-full p-3.5 text-sm bg-[#090A0F] border border-white/[0.07] rounded-lg text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-violet-500"
           />
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400">
@@ -98,7 +98,7 @@ export const SmartDiscoveryView: React.FC<SmartDiscoveryViewProps> = ({
                     'What is the ideal reading order and best FMD2 Lua source for Tsutomu Nihei megastructure sci-fi manga like BLAME!?'
                   )
                 }
-                className="text-indigo-400 hover:underline whitespace-nowrap shrink-0"
+                className="text-violet-400 hover:underline whitespace-nowrap shrink-0"
               >
                 BLAME! megastructure guide
               </button>
@@ -110,7 +110,7 @@ export const SmartDiscoveryView: React.FC<SmartDiscoveryViewProps> = ({
                     'Recommend completed dungeon & necromancer manhwa similar to Solo Leveling with the cleanest scanlation sources.'
                   )
                 }
-                className="text-indigo-400 hover:underline whitespace-nowrap shrink-0"
+                className="text-violet-400 hover:underline whitespace-nowrap shrink-0"
               >
                 Solo Leveling progression picks
               </button>
@@ -119,7 +119,7 @@ export const SmartDiscoveryView: React.FC<SmartDiscoveryViewProps> = ({
             <button
               type="submit"
               disabled={loading || !query.trim()}
-              className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white text-xs font-semibold rounded-lg transition-colors whitespace-nowrap shrink-0"
+              className="flex items-center gap-2 px-5 py-2.5 bg-violet-600 hover:bg-violet-500 disabled:opacity-40 text-white text-xs font-semibold rounded-lg transition-colors whitespace-nowrap shrink-0"
             >
               <Sparkles className="w-4 h-4" />
               <span>{loading ? 'Reasoning (ThinkingLevel.HIGH)...' : 'Analyze with High Thinking'}</span>
@@ -136,7 +136,7 @@ export const SmartDiscoveryView: React.FC<SmartDiscoveryViewProps> = ({
 
       {result && (
         <section className="space-y-6">
-          <div className="bg-[#0F1523] border border-slate-800 rounded-xl p-6 space-y-3">
+          <div className="bg-[#11121A] border border-white/[0.07] rounded-xl p-6 space-y-3">
             <div className="text-xs font-mono text-slate-400">
               ARCHIVIST SYNTHESIS · {result.model.toUpperCase()} · THINKING: {result.thinkingLevel}
             </div>
@@ -153,10 +153,10 @@ export const SmartDiscoveryView: React.FC<SmartDiscoveryViewProps> = ({
               return (
                 <div
                   key={`${rec.title}-${idx}`}
-                  className="bg-[#0F1523] border border-slate-800 rounded-xl p-5 flex flex-col justify-between space-y-4"
+                  className="bg-[#11121A] border border-white/[0.07] rounded-xl p-5 flex flex-col justify-between space-y-4"
                 >
                   <div className="space-y-2">
-                    <div className="text-xs font-mono text-indigo-400">
+                    <div className="text-xs font-mono text-violet-400">
                       0{idx + 1}. {rec.recommendedSource}
                     </div>
                     <h3 className="text-lg font-bold text-white font-display">
@@ -172,12 +172,12 @@ export const SmartDiscoveryView: React.FC<SmartDiscoveryViewProps> = ({
                     </p>
                   </div>
 
-                  <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between gap-2">
+                  <div className="pt-3 border-t border-white/[0.06] flex items-center justify-between gap-2">
                     {matchedInCatalog ? (
                       <button
                         type="button"
                         onClick={() => onInspectSeries(matchedInCatalog)}
-                        className="flex items-center gap-1.5 text-xs font-semibold text-indigo-400 hover:text-indigo-300 whitespace-nowrap shrink-0"
+                        className="flex items-center gap-1.5 text-xs font-semibold text-violet-400 hover:text-violet-300 whitespace-nowrap shrink-0"
                       >
                         <BookOpen className="w-3.5 h-3.5" />
                         <span>Inspect & Read Chapters</span>

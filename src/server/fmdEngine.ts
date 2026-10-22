@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { randomUUID } from 'node:crypto';
 import {
   FMD2_SOURCE_MODULES,
   DEFAULT_ENABLED_SOURCE_IDS,
@@ -9,6 +10,7 @@ import {
   buildComicInfoXml,
   buildZipArchiveBuffer,
   DEFAULT_CLOUD_SYNC_KEY,
+  isArchiveFormat,
   normalizeCloudSyncKey,
   sanitizeReadingProgressEntry,
   sanitizeReadingHistoryMap,
@@ -24,63 +26,23 @@ import {
   type ReadingSessionProgress,
   type CloudSyncSnapshot,
 } from '../utils/fmdLogic.ts';
+import { fetchPublicImage } from './imageProxySecurity.ts';
 import {
   resolveLiveChapterPages,
   searchAllLiveFmdSources,
   resolveLiveChaptersForSeries,
 } from './fmdLiveScraper.ts';
 
-const DOWNLOAD_ROOT = '/tmp/fmd2-downloads';
-const CLOUD_SYNC_STORE_PATH = path.join(DOWNLOAD_ROOT, 'cloud-sync-store.json');
+const DATA_ROOT = process.env.FMD_DATA_DIR?.trim() || path.join(process.cwd(), '.fmd2-data');
+const DOWNLOAD_ROOT = path.join(DATA_ROOT, 'downloads');
+const CLOUD_SYNC_STORE_PATH = path.join(DATA_ROOT, 'cloud-sync-store.json');
+const TASK_STORE_PATH = path.join(DATA_ROOT, 'download-tasks.json');
+const MAX_CHAPTER_PAGES = 1000;
+const MAX_CHAPTER_ARCHIVE_BYTES = 200 * 1024 * 1024;
+const MAX_PAGE_IMAGE_BYTES = 25 * 1024 * 1024;
 
 function ensureDownloadDir() {
-  if (!fs.existsSync(DOWNLOAD_ROOT)) {
-    fs.mkdirSync(DOWNLOAD_ROOT, { recursive: true });
-  }
-}
-
-/**
- * Generates a valid, spec-compliant %PDF-1.4 binary document buffer for PDF format tasks.
- */
-function buildValidPdfBuffer(task: DownloadTask): Buffer {
-  const safeTitle = `${task.mangaTitle} - Chapter ${task.chapterNumber}: ${task.chapterTitle}`.replace(
-    /[()\\]/g,
-    ''
-  );
-  const streamContent = [
-    'BT',
-    '/F1 18 Tf',
-    '50 740 Td',
-    `(${safeTitle}) Tj`,
-    '/F1 12 Tf',
-    '0 -28 Td',
-    `(Downloaded by FMD2 Studio Engine via ${task.luaModule}) Tj`,
-    '0 -22 Td',
-    `(Total Pages Packed: ${task.totalPages} pages | Format: PDF Container) Tj`,
-    'ET',
-  ].join('\n');
-
-  const objects = [
-    '1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n',
-    '2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n',
-    '3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>\nendobj\n',
-    `4 0 obj\n<< /Length ${Buffer.byteLength(streamContent, 'utf-8')} >>\nstream\n${streamContent}\nendstream\nendobj\n`,
-    '5 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj\n',
-  ];
-
-  let body = '%PDF-1.4\n';
-  const offsets: number[] = [];
-  for (const obj of objects) {
-    offsets.push(Buffer.byteLength(body, 'utf-8'));
-    body += obj;
-  }
-  const xrefOffset = Buffer.byteLength(body, 'utf-8');
-  body += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
-  for (const off of offsets) {
-    body += `${String(off).padStart(10, '0')} 00000 n \n`;
-  }
-  body += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF\n`;
-  return Buffer.from(body, 'utf-8');
+  fs.mkdirSync(DOWNLOAD_ROOT, { recursive: true });
 }
 
 class FmdDownloaderEngine {
@@ -99,12 +61,60 @@ class FmdDownloaderEngine {
   };
   private workerTimer: NodeJS.Timeout | null = null;
   private cloudSyncStore: Record<string, CloudSyncSnapshot> = {};
+  private activeTaskControllers = new Map<string, AbortController>();
+  private activeTaskPromises = new Map<string, Promise<void>>();
 
   constructor() {
     ensureDownloadDir();
-    this.tasks = [];
+    this.loadDownloadTasksFromDisk();
     this.loadCloudSyncStoreFromDisk();
     this.startWorkerLoop();
+  }
+
+  private loadDownloadTasksFromDisk() {
+    try {
+      if (!fs.existsSync(TASK_STORE_PATH)) return;
+      const parsed = JSON.parse(fs.readFileSync(TASK_STORE_PATH, 'utf-8')) as unknown;
+      if (!Array.isArray(parsed)) return;
+
+      this.tasks = parsed
+        .filter(
+          (task): task is DownloadTask =>
+            Boolean(task) &&
+            typeof task === 'object' &&
+            typeof task.id === 'string' &&
+            typeof task.mangaTitle === 'string' &&
+            isArchiveFormat(task.format)
+        )
+        .map((task) => {
+          const savePath = this.getDiskFilePath(task);
+          const archiveExists = task.status === 'completed' && fs.existsSync(savePath);
+          return {
+            ...task,
+            savePath,
+            status: archiveExists ? 'completed' : 'queued',
+            archiveReady: archiveExists,
+            progress: archiveExists ? 100 : 0,
+            pagesDownloaded: archiveExists ? task.totalPages : 0,
+            speedKbps: 0,
+            lastLog: archiveExists ? task.lastLog : 'Queued after server restart',
+          };
+        });
+      this.persistDownloadTasks();
+    } catch (error) {
+      console.error('Unable to restore download queue:', error);
+    }
+  }
+
+  private persistDownloadTasks() {
+    try {
+      ensureDownloadDir();
+      const tempPath = `${TASK_STORE_PATH}.${process.pid}.tmp`;
+      fs.writeFileSync(tempPath, JSON.stringify(this.tasks, null, 2), 'utf-8');
+      fs.renameSync(tempPath, TASK_STORE_PATH);
+    } catch (error) {
+      console.error('Unable to persist download queue:', error);
+    }
   }
 
   private loadCloudSyncStoreFromDisk() {
@@ -141,19 +151,19 @@ class FmdDownloaderEngine {
   private saveCloudSyncStoreToDisk() {
     try {
       ensureDownloadDir();
-      fs.writeFileSync(
-        CLOUD_SYNC_STORE_PATH,
-        JSON.stringify(this.cloudSyncStore, null, 2),
-        'utf-8'
-      );
+      const tempPath = `${CLOUD_SYNC_STORE_PATH}.${process.pid}.tmp`;
+      fs.writeFileSync(tempPath, JSON.stringify(this.cloudSyncStore, null, 2), 'utf-8');
+      fs.renameSync(tempPath, CLOUD_SYNC_STORE_PATH);
     } catch {
       // Ignore transient disk write errors
     }
   }
 
   private getDiskFilePath(task: DownloadTask): string {
-    const ext = task.format === 'FOLDER' ? 'zip' : task.format.toLowerCase();
-    const safeSeries = task.mangaTitle.replace(/[^a-zA-Z0-9_-]+/g, '_');
+    const ext = task.format.toLowerCase();
+    const safeSeries = `${task.mangaId}_${task.sourceId}_${task.mangaTitle}`
+      .replace(/[^a-zA-Z0-9_-]+/g, '_')
+      .slice(0, 120);
     const fileName = `${safeSeries}_Ch_${String(task.chapterNumber).padStart(3, '0')}.${ext}`;
     return path.join(DOWNLOAD_ROOT, fileName);
   }
@@ -169,38 +179,40 @@ class FmdDownloaderEngine {
     fileName: string;
     bytes: number;
   } {
+    if (!isArchiveFormat(task.format)) {
+      throw new Error(`Archive format ${String(task.format)} is not supported.`);
+    }
+    if (liveImageBuffers.length === 0) {
+      throw new Error('Cannot create an archive without downloaded chapter pages.');
+    }
+
     ensureDownloadDir();
     const filePath = this.getDiskFilePath(task);
     const fileName = path.basename(filePath);
 
-    let archiveBuf: Buffer;
-    if (task.format === 'PDF') {
-      archiveBuf = buildValidPdfBuffer(task);
-    } else {
-      const entries: { fileName: string; content: Uint8Array | string }[] = [];
-      if (this.config.includeComicInfoXml) {
-        entries.push({
-          fileName: 'ComicInfo.xml',
-          content: buildComicInfoXml({
-            mangaTitle: task.mangaTitle,
-            chapterNumber: task.chapterNumber,
-            chapterTitle: task.chapterTitle,
-            sourceId: task.sourceId,
-            luaModule: task.luaModule,
-            totalPages: liveImageBuffers.length || task.totalPages,
-          }),
-        });
-      }
-
-      liveImageBuffers.forEach((img, idx) => {
-        entries.push({
-          fileName: `${String(idx + 1).padStart(3, '0')}.${img.ext}`,
-          content: img.data,
-        });
+    const entries: { fileName: string; content: Uint8Array | string }[] = [];
+    if (task.format === 'CBZ' && this.config.includeComicInfoXml) {
+      entries.push({
+        fileName: 'ComicInfo.xml',
+        content: buildComicInfoXml({
+          mangaTitle: task.mangaTitle,
+          chapterNumber: task.chapterNumber,
+          chapterTitle: task.chapterTitle,
+          sourceId: task.sourceId,
+          luaModule: task.luaModule,
+          totalPages: liveImageBuffers.length,
+        }),
       });
-
-      archiveBuf = Buffer.from(buildZipArchiveBuffer(entries));
     }
+
+    liveImageBuffers.forEach((img, idx) => {
+      entries.push({
+        fileName: `${String(idx + 1).padStart(3, '0')}.${img.ext}`,
+        content: img.data,
+      });
+    });
+
+    const archiveBuf = Buffer.from(buildZipArchiveBuffer(entries));
 
     fs.writeFileSync(filePath, archiveBuf);
     task.archiveReady = true;
@@ -218,65 +230,105 @@ class FmdDownloaderEngine {
    * Asynchronous live FMD2 scraper packager: fetches real page images from upstream sources
    * and writes the CBZ/ZIP archive to disk.
    */
-  public async materializeLiveArchiveAsync(task: DownloadTask): Promise<{
+  public async materializeLiveArchiveAsync(
+    task: DownloadTask,
+    signal?: AbortSignal
+  ): Promise<{
     filePath: string;
     fileName: string;
     bytes: number;
     livePagesCount: number;
   }> {
-    try {
-      const livePages = await resolveLiveChapterPages({
-        seriesTitle: task.mangaTitle,
-        chapterNumber: task.chapterNumber,
-        sourceId: task.sourceId,
-      });
+    if (!isArchiveFormat(task.format)) {
+      throw new Error(`Archive format ${String(task.format)} is not supported.`);
+    }
 
-      const fetchedImages: { ext: string; data: Uint8Array }[] = [];
-      const sampleTargets = livePages.rawUpstreamPages.slice(0, 8);
-      if (sampleTargets.length > 0) {
-        const results = await Promise.all(
-          sampleTargets.map(async (item) => {
-            try {
-              const res = await fetch(item.url, {
-                headers: {
-                  Referer: item.referer,
-                  'User-Agent':
-                    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-                },
-                signal: AbortSignal.timeout(4000),
-              });
-              if (!res.ok) return null;
-              const ab = await res.arrayBuffer();
-              const ct = res.headers.get('content-type') || '';
-              const ext = ct.includes('webp')
-                ? 'webp'
-                : ct.includes('png')
-                ? 'png'
-                : 'jpg';
-              return { ext, data: new Uint8Array(ab) };
-            } catch {
-              return null;
-            }
-          })
-        );
-        for (const r of results) {
-          if (r && r.data.byteLength > 0) {
-            fetchedImages.push(r);
+    const livePages = await resolveLiveChapterPages({
+      seriesTitle: task.mangaTitle,
+      chapterNumber: task.chapterNumber,
+      sourceId: task.sourceId,
+      externalId: task.externalId,
+    });
+    if (livePages.rawUpstreamPages.length === 0) {
+      throw new Error(`No live pages were found for ${task.mangaTitle} chapter ${task.chapterNumber}.`);
+    }
+    if (livePages.rawUpstreamPages.length > MAX_CHAPTER_PAGES) {
+      throw new Error(`Chapter exceeds the ${MAX_CHAPTER_PAGES}-page download limit.`);
+    }
+
+    task.totalPages = livePages.rawUpstreamPages.length;
+    task.pagesDownloaded = 0;
+    task.progress = 0;
+    task.bytesWritten = 0;
+    task.archiveReady = false;
+    task.lastLog = `[${task.luaModule}] Downloading ${task.totalPages} source pages`;
+
+    const fetchedImages: { ext: string; data: Uint8Array }[] = new Array(task.totalPages);
+    let nextIndex = 0;
+    let totalBytes = 0;
+    let failure: Error | null = null;
+    const startedAt = Date.now();
+    const workerCount = Math.min(
+      task.totalPages,
+      Math.max(1, Math.min(8, this.config.maxThreadsPerTask))
+    );
+
+    const downloadNextPage = async () => {
+      while (!failure && !signal?.aborted) {
+        const pageIndex = nextIndex++;
+        if (pageIndex >= livePages.rawUpstreamPages.length) return;
+        const target = livePages.rawUpstreamPages[pageIndex];
+
+        try {
+          const image = await fetchPublicImage(target.url, target.referer, {
+            signal,
+            maxBytes: MAX_PAGE_IMAGE_BYTES,
+          });
+          const contentType = image.contentType.toLowerCase();
+          const ext = contentType.includes('webp')
+            ? 'webp'
+            : contentType.includes('png')
+            ? 'png'
+            : contentType.includes('gif')
+            ? 'gif'
+            : contentType.includes('avif')
+            ? 'avif'
+            : contentType.includes('jpeg') || contentType.includes('jpg')
+            ? 'jpg'
+            : null;
+          if (!ext) throw new Error(`Unsupported page image type: ${contentType || 'unknown'}.`);
+
+          totalBytes += image.buffer.length;
+          if (totalBytes > MAX_CHAPTER_ARCHIVE_BYTES) {
+            throw new Error('Chapter exceeds the 200 MB archive size limit.');
           }
+
+          fetchedImages[pageIndex] = { ext, data: image.buffer };
+          task.pagesDownloaded++;
+          task.progress = Math.round((task.pagesDownloaded / task.totalPages) * 100);
+          task.bytesWritten = totalBytes;
+          task.sizeMb = Number((totalBytes / (1024 * 1024)).toFixed(1));
+          const elapsedSeconds = Math.max(0.25, (Date.now() - startedAt) / 1000);
+          task.speedKbps = Math.round(totalBytes / elapsedSeconds / 1024);
+          task.lastLog = `[${task.luaModule}] Downloaded page ${task.pagesDownloaded}/${task.totalPages}`;
+        } catch (error) {
+          failure = error instanceof Error ? error : new Error('Page download failed.');
+          return;
         }
       }
+    };
 
-      const info = this.materializeArchiveToDiskSync(task, fetchedImages);
-      if (fetchedImages.length > 0) {
-        task.lastLog = `[${task.luaModule}] Packed ${fetchedImages.length} live source pages into ${info.fileName} (${(
-          info.bytes / 1024
-        ).toFixed(1)} KB)`;
-      }
-      return { ...info, livePagesCount: fetchedImages.length };
-    } catch {
-      const info = this.materializeArchiveToDiskSync(task);
-      return { ...info, livePagesCount: 0 };
+    await Promise.all(Array.from({ length: workerCount }, () => downloadNextPage()));
+    if (signal?.aborted) throw new Error('Download paused.');
+    if (failure) throw failure;
+    if (fetchedImages.some((image) => !image)) {
+      throw new Error('One or more chapter pages could not be downloaded.');
     }
+
+    const info = this.materializeArchiveToDiskSync(task, fetchedImages);
+    task.speedKbps = 0;
+    task.archiveReady = true;
+    return { ...info, livePagesCount: fetchedImages.length };
   }
 
   private startWorkerLoop() {
@@ -288,44 +340,78 @@ class FmdDownloaderEngine {
   }
 
   private tickWorkers() {
-    let activeCount = this.tasks.filter((t) => t.status === 'downloading').length;
+    let activeCount = this.activeTaskPromises.size;
+    let startedTask = false;
     for (const task of this.tasks) {
       if (activeCount >= this.config.maxConcurrentTasks) break;
       if (task.status === 'queued') {
         task.status = 'downloading';
-        task.speedKbps = 2800 + this.config.maxThreadsPerTask * 420;
-        task.lastLog = `[${task.luaModule}] Connected · Spawning ${this.config.maxThreadsPerTask} image threads`;
-        activeCount++;
-      }
-    }
-
-    for (const task of this.tasks) {
-      if (task.status !== 'downloading') continue;
-
-      const pagesStep = Math.max(2, this.config.maxThreadsPerTask);
-      const nextPages = Math.min(task.totalPages, task.pagesDownloaded + pagesStep);
-      const nextProgress = Math.min(100, Math.round((nextPages / task.totalPages) * 100));
-
-      task.pagesDownloaded = nextPages;
-      task.progress = nextProgress;
-      task.speedKbps =
-        2600 + this.config.maxThreadsPerTask * 450 + ((task.chapterNumber * 73) % 450);
-
-      if (nextPages >= task.totalPages) {
-        task.status = 'completed';
-        task.progress = 100;
         task.speedKbps = 0;
-        const diskInfo = this.materializeArchiveToDiskSync(task);
-        task.lastLog = `[${task.luaModule}] Packed ${diskInfo.fileName} (${(
-          diskInfo.bytes / 1024
-        ).toFixed(1)} KB on disk)`;
-        void this.materializeLiveArchiveAsync(task);
-      } else {
-        task.lastLog = `[${task.luaModule}] GET page ${String(nextPages).padStart(3, '0')}/${String(
-          task.totalPages
-        ).padStart(3, '0')} · ${this.config.maxThreadsPerTask} threads active`;
+        task.lastLog = `[${task.luaModule}] Resolving chapter pages`;
+        const controller = new AbortController();
+        this.activeTaskControllers.set(task.id, controller);
+        const run = Promise.resolve()
+          .then(() => this.materializeLiveArchiveAsync(task, controller.signal))
+          .then((info) => {
+            if (task.status === 'paused') return;
+            task.status = 'completed';
+            task.progress = 100;
+            task.pagesDownloaded = info.livePagesCount;
+            task.bytesWritten = info.bytes;
+            task.savePath = info.filePath;
+            task.lastLog = `[${task.luaModule}] Packed ${info.livePagesCount} source pages into ${info.fileName}`;
+          })
+          .catch((error: unknown) => {
+            if (task.status === 'paused') return;
+            task.status = 'failed';
+            task.speedKbps = 0;
+            task.archiveReady = false;
+            task.lastLog = error instanceof Error ? error.message : 'Chapter download failed.';
+          })
+          .finally(() => {
+            this.activeTaskControllers.delete(task.id);
+            this.activeTaskPromises.delete(task.id);
+            this.persistDownloadTasks();
+            this.tickWorkers();
+          });
+        this.activeTaskPromises.set(task.id, run);
+        activeCount++;
+        startedTask = true;
       }
     }
+
+    if (startedTask) this.persistDownloadTasks();
+  }
+
+  private queueTask(task: DownloadTask, logMessage: string) {
+    task.status = 'queued';
+    task.progress = 0;
+    task.pagesDownloaded = 0;
+    task.bytesWritten = 0;
+    task.speedKbps = 0;
+    task.archiveReady = false;
+    task.lastLog = logMessage;
+  }
+
+  private requeueTask(task: DownloadTask, logMessage: string) {
+    const activeAttempt = this.activeTaskPromises.get(task.id);
+    if (!activeAttempt) {
+      this.queueTask(task, logMessage);
+      return;
+    }
+
+    // Keep the task paused until the old attempt observes its abort and exits.
+    // Otherwise its rejection handler can overwrite the queued state as failed.
+    task.status = 'paused';
+    task.speedKbps = 0;
+    task.lastLog = `[${task.luaModule}] Stopping current attempt before retry`;
+    this.activeTaskControllers.get(task.id)?.abort();
+    void activeAttempt.finally(() => {
+      if (!this.tasks.includes(task) || task.status !== 'paused') return;
+      this.queueTask(task, logMessage);
+      this.persistDownloadTasks();
+      this.tickWorkers();
+    });
   }
 
   public getState() {
@@ -464,10 +550,10 @@ class FmdDownloaderEngine {
   }
 
   public updateConfig(partial: Partial<FmdEngineConfig>) {
-    if (typeof partial.maxConcurrentTasks === 'number') {
+    if (typeof partial.maxConcurrentTasks === 'number' && Number.isFinite(partial.maxConcurrentTasks)) {
       this.config.maxConcurrentTasks = Math.max(1, Math.min(6, partial.maxConcurrentTasks));
     }
-    if (typeof partial.maxThreadsPerTask === 'number') {
+    if (typeof partial.maxThreadsPerTask === 'number' && Number.isFinite(partial.maxThreadsPerTask)) {
       this.config.maxThreadsPerTask = Math.max(1, Math.min(8, partial.maxThreadsPerTask));
     }
     if (typeof partial.includeComicInfoXml === 'boolean') {
@@ -476,11 +562,15 @@ class FmdDownloaderEngine {
     if (typeof partial.autoDownloadToBrowser === 'boolean') {
       this.config.autoDownloadToBrowser = partial.autoDownloadToBrowser;
     }
-    if (partial.defaultFormat) {
+    if (isArchiveFormat(partial.defaultFormat)) {
       this.config.defaultFormat = partial.defaultFormat;
     }
-    if (Array.isArray(partial.enabledSources) && partial.enabledSources.length > 0) {
-      this.config.enabledSources = partial.enabledSources;
+    if (Array.isArray(partial.enabledSources)) {
+      const supportedSources = partial.enabledSources.filter(
+        (sourceId): sourceId is SourceId =>
+          typeof sourceId === 'string' && DEFAULT_ENABLED_SOURCE_IDS.includes(sourceId)
+      );
+      if (supportedSources.length > 0) this.config.enabledSources = supportedSources;
     }
     if (typeof partial.autoDetectReadingMode === 'boolean') {
       this.config.autoDetectReadingMode = partial.autoDetectReadingMode;
@@ -498,50 +588,48 @@ class FmdDownloaderEngine {
     series: Pick<MangaSeries, 'id' | 'title'>,
     chapters: MangaChapter[],
     sourceId: SourceId,
-    format: ArchiveFormat,
-    completeImmediately = true
+    format: ArchiveFormat
   ): DownloadTask[] {
+    if (!DEFAULT_ENABLED_SOURCE_IDS.includes(sourceId)) {
+      throw new Error(`Live downloads are not implemented for source ${sourceId}.`);
+    }
+    if (!isArchiveFormat(format)) {
+      throw new Error(`Archive format ${String(format)} is not supported.`);
+    }
+
     const mod = FMD2_SOURCE_MODULES.find((m) => m.id === sourceId) || FMD2_SOURCE_MODULES[0];
     const nowTime = new Date().toTimeString().slice(0, 8);
 
-    const created: DownloadTask[] = chapters.map((ch, idx) => {
+    const created: DownloadTask[] = chapters.map((ch) => {
       const totalPages = ch.pagesCount || 18;
       const task: DownloadTask = {
-        id: `dl-${series.id}-${ch.number}-${Date.now()}-${idx}`,
+        id: `dl-${randomUUID()}`,
         mangaId: series.id,
         mangaTitle: series.title,
         chapterId: ch.id,
         chapterNumber: ch.number,
         chapterTitle: ch.title,
+        externalId: ch.externalId,
         sourceId,
         luaModule: mod.luaModule,
         format,
-        status: completeImmediately ? 'completed' : 'queued',
-        progress: completeImmediately ? 100 : 0,
-        pagesDownloaded: completeImmediately ? totalPages : 0,
+        status: 'queued',
+        progress: 0,
+        pagesDownloaded: 0,
         totalPages,
         speedKbps: 0,
         sizeMb: Number((14 + (ch.number % 9) * 1.4).toFixed(1)),
         addedAt: nowTime,
-        savePath: `${DOWNLOAD_ROOT}/${series.title.replace(/[^a-zA-Z0-9_-]+/g, '_')}_Ch_${String(
-          ch.number
-        ).padStart(3, '0')}.${format.toLowerCase()}`,
+        savePath: '',
         archiveReady: false,
         lastLog: `[${mod.luaModule}] Queued for extraction (${format})`,
       };
-
-      if (completeImmediately) {
-        const diskInfo = this.materializeArchiveToDiskSync(task);
-        task.lastLog = `[${mod.luaModule}] Packed ${diskInfo.fileName} (${(
-          diskInfo.bytes / 1024
-        ).toFixed(1)} KB on disk)`;
-        void this.materializeLiveArchiveAsync(task);
-      }
-
+      task.savePath = this.getDiskFilePath(task);
       return task;
     });
 
     this.tasks = [...created, ...this.tasks];
+    this.persistDownloadTasks();
     this.tickWorkers();
     return created;
   }
@@ -599,13 +687,12 @@ class FmdDownloaderEngine {
       targetSeries,
       chaptersToQueue,
       parsed.sourceId,
-      format,
-      true
+      format
     );
 
     return {
       ok: true,
-      message: `FMD2 Engine resolved "${targetSeries.title}" via ${parsed.luaModule} — Packed & ready to save ${addedTasks.length} chapters (${format}).`,
+      message: `FMD2 Engine resolved "${targetSeries.title}" via ${parsed.luaModule} — Queued ${addedTasks.length} chapters for download (${format}).`,
       series: targetSeries,
       addedTasks,
     };
@@ -613,7 +700,9 @@ class FmdDownloaderEngine {
 
   public controlTask(taskId: string, action: 'toggle' | 'remove' | 'retry' | 'completeNow') {
     if (action === 'remove') {
+      this.activeTaskControllers.get(taskId)?.abort();
       this.tasks = this.tasks.filter((t) => t.id !== taskId);
+      this.persistDownloadTasks();
       return this.getState();
     }
 
@@ -623,6 +712,7 @@ class FmdDownloaderEngine {
     if (action === 'toggle') {
       if (task.status === 'downloading') {
         task.status = 'paused';
+        this.activeTaskControllers.get(taskId)?.abort();
         task.speedKbps = 0;
         task.lastLog = `[${task.luaModule}] Paused by user at page ${task.pagesDownloaded}/${task.totalPages}`;
       } else if (
@@ -630,22 +720,16 @@ class FmdDownloaderEngine {
         task.status === 'queued' ||
         task.status === 'failed'
       ) {
-        task.status = 'downloading';
-        task.speedKbps = 2900;
-        task.lastLog = `[${task.luaModule}] Resumed download worker`;
+        this.requeueTask(task, `[${task.luaModule}] Requeued for download`);
       }
-    } else if (action === 'completeNow') {
-      task.pagesDownloaded = task.totalPages;
-      task.progress = 100;
-      task.status = 'completed';
-      task.speedKbps = 0;
-      const diskInfo = this.materializeArchiveToDiskSync(task);
-      task.lastLog = `[${task.luaModule}] Packed ${diskInfo.fileName} (${(
-        diskInfo.bytes / 1024
-      ).toFixed(1)} KB on disk)`;
-      void this.materializeLiveArchiveAsync(task);
+    } else if (action === 'retry' || action === 'completeNow') {
+      if (task.status !== 'completed') {
+        this.requeueTask(task, `[${task.luaModule}] Requeued for download`);
+      }
     }
 
+    this.persistDownloadTasks();
+    this.tickWorkers();
     return this.getState();
   }
 
@@ -656,6 +740,7 @@ class FmdDownloaderEngine {
       for (const t of this.tasks) {
         if (t.status === 'downloading' || t.status === 'queued') {
           t.status = 'paused';
+          this.activeTaskControllers.get(t.id)?.abort();
           t.speedKbps = 0;
           t.lastLog = `[${t.luaModule}] Paused by batch command`;
         }
@@ -663,13 +748,12 @@ class FmdDownloaderEngine {
     } else if (action === 'startAll') {
       for (const t of this.tasks) {
         if (t.status === 'paused' || t.status === 'queued') {
-          t.status = 'downloading';
-          t.speedKbps = 3100;
-          t.lastLog = `[${t.luaModule}] Started by Start All`;
+          this.requeueTask(t, `[${t.luaModule}] Requeued by Start All`);
         }
       }
-      this.tickWorkers();
     }
+    this.persistDownloadTasks();
+    this.tickWorkers();
     return this.getState();
   }
 
@@ -681,22 +765,24 @@ class FmdDownloaderEngine {
     const task = this.tasks.find((t) => t.id === taskId);
     if (!task) return null;
 
-    if (task.status !== 'completed') {
-      task.pagesDownloaded = task.totalPages;
-      task.progress = 100;
-      task.status = 'completed';
-      task.speedKbps = 0;
+    while (task.status === 'queued' || task.status === 'downloading') {
+      const running = this.activeTaskPromises.get(taskId);
+      if (running) {
+        await running;
+      } else {
+        this.tickWorkers();
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      }
     }
 
-    const liveInfo = await this.materializeLiveArchiveAsync(task);
-    const filePath = liveInfo.filePath;
+    if (task.status !== 'completed' || !task.archiveReady || !fs.existsSync(task.savePath)) {
+      throw new Error(task.lastLog || 'The archive is not ready to download.');
+    }
 
-    const buffer = fs.readFileSync(filePath);
-    const fileName = path.basename(filePath);
+    const buffer = fs.readFileSync(task.savePath);
+    const fileName = path.basename(task.savePath);
     const mimeType =
-      task.format === 'PDF'
-        ? 'application/pdf'
-        : task.format === 'CBZ'
+      task.format === 'CBZ'
         ? 'application/vnd.comicbook+zip'
         : 'application/zip';
 

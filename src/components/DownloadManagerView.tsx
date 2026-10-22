@@ -86,8 +86,6 @@ export const DownloadManagerView: React.FC<DownloadManagerViewProps> = ({
   const archiveFormatItems = useMemo<DropdownMenuItem<ArchiveFormat>[]>(
     () => [
       { value: 'CBZ', label: 'CBZ Archive', description: 'Comic Book ZIP with ComicInfo.xml' },
-      { value: 'PDF', label: 'PDF Document', description: 'Portable Document Format' },
-      { value: 'EPUB', label: 'EPUB E-Book', description: 'Reflowable e-reader container' },
       { value: 'ZIP', label: 'ZIP Archive', description: 'Standard compressed chapter images' },
     ],
     []
@@ -127,7 +125,7 @@ export const DownloadManagerView: React.FC<DownloadManagerViewProps> = ({
         value: 'downloading',
         label: 'Active Downloading',
         badge: stats.activeCount,
-        accentDotColor: 'bg-indigo-400',
+        accentDotColor: 'bg-violet-400',
         description: 'Currently fetching and packing pages',
       },
       {
@@ -236,7 +234,7 @@ export const DownloadManagerView: React.FC<DownloadManagerViewProps> = ({
       )}
 
       {/* Classic FMD2 Direct URL Link Grabber Section */}
-      <section className="studio-panel bg-[#0F1523] border border-slate-800 rounded-xl p-6 space-y-4">
+      <section className="studio-panel bg-[#11121A] border border-white/[0.07] rounded-xl p-6 space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2.5">
@@ -249,7 +247,7 @@ export const DownloadManagerView: React.FC<DownloadManagerViewProps> = ({
               </span>
             </div>
             <p className="text-xs text-slate-400 mt-0.5">
-              Connected to the server-side FMD2 Downloader Engine (`/api/engine`). Paste any manga URL to resolve chapters and immediately download a packed CBZ, PDF, or ZIP archive.
+              Connected to the server-side FMD2 downloader. Paste a supported manga URL to resolve chapters and package CBZ or ZIP archives.
             </p>
           </div>
           <DropdownMenu<ArchiveFormat>
@@ -276,13 +274,13 @@ export const DownloadManagerView: React.FC<DownloadManagerViewProps> = ({
               value={directUrl}
               onChange={(e) => setDirectUrl(e.target.value)}
               placeholder="https://weebcentral.com/series/01J76XYCPSY3C4BNPBRY8JMCBE/Solo-Leveling"
-              className="w-full pl-10 pr-4 py-2.5 text-sm font-mono studio-subpanel bg-[#0B0F17] border border-slate-800 rounded-lg text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-indigo-500"
+              className="w-full pl-10 pr-4 py-2.5 text-sm font-mono studio-subpanel bg-[#090A0F] border border-white/[0.07] rounded-lg text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-violet-500"
             />
           </div>
           <button
             type="submit"
             disabled={submittingUrl}
-            className="flex items-center justify-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-semibold rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+            className="flex items-center justify-center gap-2 px-5 py-2.5 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-white text-xs font-semibold rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer"
           >
             <Download className="w-3.5 h-3.5" />
             <span>{submittingUrl ? 'Packing & Saving...' : 'Fetch & Download Link'}</span>
@@ -297,7 +295,7 @@ export const DownloadManagerView: React.FC<DownloadManagerViewProps> = ({
             onClick={() =>
               setDirectUrl('https://weebcentral.com/series/01J76XYCPSY3C4BNPBRY8JMCBE/Solo-Leveling')
             }
-            className="text-indigo-400 hover:underline font-mono whitespace-nowrap shrink-0 cursor-pointer"
+            className="text-violet-400 hover:underline font-mono whitespace-nowrap shrink-0 cursor-pointer"
           >
             weebcentral.com/series/Solo-Leveling
           </button>
@@ -307,7 +305,7 @@ export const DownloadManagerView: React.FC<DownloadManagerViewProps> = ({
             onClick={() =>
               setDirectUrl('https://asurascans.com/comics/shadow-slave-1bb35e56')
             }
-            className="text-indigo-400 hover:underline font-mono whitespace-nowrap shrink-0 cursor-pointer"
+            className="text-violet-400 hover:underline font-mono whitespace-nowrap shrink-0 cursor-pointer"
           >
             asurascans.com/comics/shadow-slave
           </button>
@@ -317,7 +315,7 @@ export const DownloadManagerView: React.FC<DownloadManagerViewProps> = ({
             onClick={() =>
               setDirectUrl('https://weebcentral.com/series/01J76XY7EF75DJNQCV04HTPDZK/Berserk')
             }
-            className="text-indigo-400 hover:underline font-mono whitespace-nowrap shrink-0 cursor-pointer"
+            className="text-violet-400 hover:underline font-mono whitespace-nowrap shrink-0 cursor-pointer"
           >
             weebcentral.com/series/Berserk
           </button>
@@ -325,14 +323,14 @@ export const DownloadManagerView: React.FC<DownloadManagerViewProps> = ({
           <button
             type="button"
             onClick={() => setDirectUrl('https://mangakatana.com/manga/kanojo-no-carrera.3551')}
-            className="text-indigo-400 hover:underline font-mono whitespace-nowrap shrink-0 cursor-pointer"
+            className="text-violet-400 hover:underline font-mono whitespace-nowrap shrink-0 cursor-pointer"
           >
             mangakatana.com/manga/kanojo-no-carrera
           </button>
         </div>
 
         {liveParsedPreview && (
-          <div className="text-xs font-mono text-slate-300 studio-subpanel bg-[#0B0F17] border border-slate-800 rounded-lg px-3.5 py-2 flex flex-wrap items-center gap-2">
+          <div className="text-xs font-mono text-slate-300 studio-subpanel bg-[#090A0F] border border-white/[0.07] rounded-lg px-3.5 py-2 flex flex-wrap items-center gap-2">
             {liveParsedPreview.isValid ? (
               <>
                 <span className="text-emerald-400">Detected Connector:</span>
@@ -361,10 +359,10 @@ export const DownloadManagerView: React.FC<DownloadManagerViewProps> = ({
       </section>
 
       {/* FMD2 Connector Health & Server Worker Configuration Bar */}
-      <section className="studio-panel bg-[#0F1523] border border-slate-800 rounded-xl p-5 space-y-4">
+      <section className="studio-panel bg-[#11121A] border border-white/[0.07] rounded-xl p-5 space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-2.5">
-            <SlidersHorizontal className="w-4 h-4 text-indigo-400" />
+            <SlidersHorizontal className="w-4 h-4 text-violet-400" />
             <div>
               <h3 className="text-sm font-bold text-white font-display">
                 FMD2 Lua Connector Bridge &amp; Worker Pool
@@ -380,7 +378,7 @@ export const DownloadManagerView: React.FC<DownloadManagerViewProps> = ({
               type="button"
               onClick={handleVerifyFmd2Connection}
               disabled={verifyingConnectors}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-[#0B0F17] hover:bg-slate-800 text-emerald-400 border border-slate-800 rounded-lg font-mono transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-[#090A0F] hover:bg-slate-800 text-emerald-400 border border-white/[0.07] rounded-lg font-mono transition-colors whitespace-nowrap shrink-0 cursor-pointer"
             >
               <RefreshCw
                 className={`w-3.5 h-3.5 ${verifyingConnectors ? 'animate-spin' : ''}`}
@@ -429,7 +427,7 @@ export const DownloadManagerView: React.FC<DownloadManagerViewProps> = ({
               <span>Embed ComicInfo.xml</span>
               <span
                 className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${
-                  engineConfig.includeComicInfoXml ? 'bg-indigo-600' : 'bg-slate-700'
+                  engineConfig.includeComicInfoXml ? 'bg-violet-600' : 'bg-slate-700'
                 }`}
               >
                 <span
@@ -444,11 +442,11 @@ export const DownloadManagerView: React.FC<DownloadManagerViewProps> = ({
 
         {/* Live Connector Status Strip */}
         {connectorStatuses.length > 0 && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-2 border-t border-slate-800/80">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-2 border-t border-white/[0.06]">
             {connectorStatuses.slice(0, 4).map((conn) => (
               <div
                 key={conn.sourceId}
-                className="studio-subpanel bg-[#0B0F17] border border-slate-800/90 rounded-lg px-3.5 py-2.5 flex items-center justify-between gap-2 text-xs"
+                className="studio-subpanel bg-[#090A0F] border border-white/[0.07]/90 rounded-lg px-3.5 py-2.5 flex items-center justify-between gap-2 text-xs"
               >
                 <div className="min-w-0">
                   <div className="font-semibold text-white truncate flex items-center gap-1.5">
@@ -474,7 +472,7 @@ export const DownloadManagerView: React.FC<DownloadManagerViewProps> = ({
       {/* Queue Metrics Strip & Controls */}
       <section className="space-y-4">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <div className="studio-panel bg-[#0F1523] border border-slate-800 rounded-xl p-4">
+          <div className="studio-panel bg-[#11121A] border border-white/[0.07] rounded-xl p-4">
             <div className="text-xs text-slate-400">Active Engine Workers</div>
             <div className="text-2xl font-bold text-white font-mono tabular-nums mt-1">
               {stats.activeCount}{' '}
@@ -483,20 +481,20 @@ export const DownloadManagerView: React.FC<DownloadManagerViewProps> = ({
               </span>
             </div>
           </div>
-          <div className="studio-panel bg-[#0F1523] border border-slate-800 rounded-xl p-4">
+          <div className="studio-panel bg-[#11121A] border border-white/[0.07] rounded-xl p-4">
             <div className="text-xs text-slate-400">Aggregate Throughput</div>
-            <div className="text-2xl font-bold text-indigo-400 font-mono tabular-nums mt-1">
+            <div className="text-2xl font-bold text-violet-400 font-mono tabular-nums mt-1">
               {stats.totalSpeedMbps.toFixed(2)}{' '}
               <span className="text-xs font-normal text-slate-400">MB/s</span>
             </div>
           </div>
-          <div className="studio-panel bg-[#0F1523] border border-slate-800 rounded-xl p-4">
+          <div className="studio-panel bg-[#11121A] border border-white/[0.07] rounded-xl p-4">
             <div className="text-xs text-slate-400">Packed Archives Ready</div>
             <div className="text-2xl font-bold text-emerald-400 font-mono tabular-nums mt-1">
               {stats.completedCount}
             </div>
           </div>
-          <div className="studio-panel bg-[#0F1523] border border-slate-800 rounded-xl p-4">
+          <div className="studio-panel bg-[#11121A] border border-white/[0.07] rounded-xl p-4">
             <div className="text-xs text-slate-400">Batch Completion</div>
             <div className="text-2xl font-bold text-white font-mono tabular-nums mt-1">
               {stats.overallProgressPercent}%
@@ -520,7 +518,7 @@ export const DownloadManagerView: React.FC<DownloadManagerViewProps> = ({
             <button
               type="button"
               onClick={onStartAll}
-              className="flex items-center gap-1.5 px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-lg transition-colors whitespace-nowrap shrink-0"
+              className="flex items-center gap-1.5 px-3.5 py-2 bg-violet-600 hover:bg-violet-500 text-white text-xs font-semibold rounded-lg transition-colors whitespace-nowrap shrink-0"
             >
               <Play className="w-3.5 h-3.5" />
               <span>Start All</span>
@@ -528,7 +526,7 @@ export const DownloadManagerView: React.FC<DownloadManagerViewProps> = ({
             <button
               type="button"
               onClick={onPauseAll}
-              className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium rounded-lg border border-slate-700 transition-colors whitespace-nowrap shrink-0"
+              className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium rounded-lg border border-white/[0.1] transition-colors whitespace-nowrap shrink-0"
             >
               <Pause className="w-3.5 h-3.5" />
               <span>Pause All</span>
@@ -536,7 +534,7 @@ export const DownloadManagerView: React.FC<DownloadManagerViewProps> = ({
             <button
               type="button"
               onClick={onClearCompleted}
-              className="flex items-center gap-1.5 px-3.5 py-2 bg-[#0F1523] hover:bg-slate-900 text-slate-300 text-xs font-medium rounded-lg border border-slate-800 transition-colors whitespace-nowrap shrink-0"
+              className="flex items-center gap-1.5 px-3.5 py-2 bg-[#11121A] hover:bg-slate-900 text-slate-300 text-xs font-medium rounded-lg border border-white/[0.07] transition-colors whitespace-nowrap shrink-0"
             >
               <Trash2 className="w-3.5 h-3.5" />
               <span>Clear Completed</span>
@@ -545,7 +543,7 @@ export const DownloadManagerView: React.FC<DownloadManagerViewProps> = ({
         </div>
 
         {/* High-Density FMD2 Download Queue Table */}
-        <div className="bg-[#0F1523] border border-slate-800 rounded-xl overflow-hidden">
+        <div className="bg-[#11121A] border border-white/[0.07] rounded-xl overflow-hidden">
           {filteredTasks.length === 0 ? (
             <div className="p-12 text-center space-y-2">
               <FolderDown className="w-8 h-8 text-slate-500 mx-auto" />
@@ -553,14 +551,14 @@ export const DownloadManagerView: React.FC<DownloadManagerViewProps> = ({
                 No download tasks in this view
               </div>
               <p className="text-xs text-slate-400 max-w-md mx-auto">
-                Paste a manga URL above or select any series from the Catalog to download chapters as CBZ, PDF, or ZIP archives.
+                Paste a manga URL above or select a series from the catalog to download chapters as CBZ or ZIP archives.
               </p>
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="border-b border-slate-800 text-[11px] font-mono text-slate-400 bg-[#0B0F17]">
+                  <tr className="border-b border-white/[0.07] text-[11px] font-mono text-slate-400 bg-[#090A0F]">
                     <th className="py-3 px-4">MANGA & CHAPTER</th>
                     <th className="py-3 px-4 hidden md:table-cell">ENGINE WORKER LOG</th>
                     <th className="py-3 px-4">STATUS</th>
@@ -605,7 +603,7 @@ export const DownloadManagerView: React.FC<DownloadManagerViewProps> = ({
                             </span>
                           )}
                           {task.status === 'downloading' && (
-                            <span className="inline-flex items-center gap-1.5 text-indigo-400 font-medium">
+                            <span className="inline-flex items-center gap-1.5 text-violet-400 font-medium">
                               <Download className="w-3.5 h-3.5" />
                               <span>Downloading</span>
                             </span>
@@ -638,7 +636,7 @@ export const DownloadManagerView: React.FC<DownloadManagerViewProps> = ({
                                     ? 'bg-emerald-500'
                                     : task.status === 'paused'
                                     ? 'bg-slate-500'
-                                    : 'bg-indigo-500'
+                                    : 'bg-violet-500'
                                 }`}
                                 style={{ width: `${task.progress}%` }}
                               />

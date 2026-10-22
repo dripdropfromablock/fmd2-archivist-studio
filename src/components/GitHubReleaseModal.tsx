@@ -76,13 +76,13 @@ interface GitHubReleaseModalProps {
 
 const DEFAULT_RELEASE_NOTES = `## FMD2 Archivist Studio — v2.4.0 Release Notes
 
-> **Standalone multi-source manga & webtoon reader and batch CBZ / PDF / EPUB archivist built on top of the [Free Manga Downloader 2 (FMD2)](https://github.com/dazedcat19/FMD2) ecosystem.**
+> **Standalone manga and webtoon reader, live source browser, and CBZ / ZIP chapter archiver built around FMD2 source adapters.**
 
 ### Highlights
 - **Browse Sources Primary Home Workspace**: Direct multi-source live browsing across \`WeebCentral\`, \`AsuraScans\`, \`MangaDex\`, \`LikeManga\`, \`MangaKatana\`, and 600+ verified FMD2 Lua connectors.
 - **Custom Interactive Dropdown Menu UI**: Animated popover dropdown menus with search filtering, badges, and keyboard navigation across Browse Sources (\`Genre\`, \`Status\`, \`Sort by\`, \`Source\`, \`Format\`, \`Demographic\`, \`Chapters\`), Reader Toolbar, and Studio Settings.
 - **Subtle Tactile UI & Pointer Motion**: Refined cursor halo/ripple feedback and Apple spring micro-interactions.
-- **Batch CBZ / PDF / EPUB Archivist**: Multi-threaded chapter packaging with embedded \`ComicInfo.xml\` metadata.
+- **Batch CBZ / ZIP Archiver**: Concurrent chapter page downloads and packaging, with optional \`ComicInfo.xml\` metadata in CBZ files.
 
 ### Credits & Acknowledgments
 Built as a standalone web application on top of **[dazedcat19/FMD2 (Free Manga Downloader 2)](https://github.com/dazedcat19/FMD2)** and inspired by **[riderkick/FMD](https://github.com/riderkick/FMD)** and the open-source FMD2 Lua module contributors.`;
@@ -663,6 +663,18 @@ export const GitHubReleaseModal: React.FC<GitHubReleaseModalProps> = ({
                   <span>View Live Release {publishResult.tagName} on GitHub</span>
                   <ExternalLink className="w-3.5 h-3.5" />
                 </a>
+              ) : publishResult.repoExists ? (
+                <a
+                  href={publishResult.prefilledReleaseUrl || prefilledGitHubReleaseUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-lg transition-colors"
+                >
+                  <span>
+                    Confirm & Publish {publishResult.tagName} on GitHub ({publishResult.repoFullName})
+                  </span>
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </a>
               ) : (
                 <>
                   {deviceFlow && (
@@ -677,25 +689,19 @@ export const GitHubReleaseModal: React.FC<GitHubReleaseModalProps> = ({
                     >
                       <KeyRound className="w-3.5 h-3.5" />
                       <span>
-                        Push All {publishResult.filesCommitted} Code Files to GitHub (Code: {deviceFlow.userCode})
+                        Auto-Create Repo & Publish (Code: {deviceFlow.userCode})
                       </span>
                       <ExternalLink className="w-3.5 h-3.5" />
                     </a>
                   )}
                   <a
-                    href={
-                      publishResult.repoExists
-                        ? publishResult.prefilledReleaseUrl || prefilledGitHubReleaseUrl
-                        : publishResult.createStandaloneRepoUrl || createStandaloneRepoUrl
-                    }
+                    href={publishResult.createStandaloneRepoUrl || createStandaloneRepoUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-lg transition-colors"
                   >
                     <span>
-                      {publishResult.repoExists
-                        ? `Confirm & Publish ${publishResult.tagName} on GitHub (${publishResult.repoFullName})`
-                        : `Step 1: Create Standalone Repo on GitHub.com (${repoName})`}
+                      Step 1: Create Standalone Repo on GitHub.com ({repoName})
                     </span>
                     <ExternalLink className="w-3.5 h-3.5" />
                   </a>

@@ -59,6 +59,7 @@ import {
   type ReadLaterItem,
 } from '../utils/fmdLogic.ts';
 import { MangaCoverArt } from './MangaArtRenderer.tsx';
+import { DropdownMenu } from './DropdownMenu.tsx';
 
 interface MangaSeriesPageProps {
   series: MangaSeries;
@@ -647,17 +648,17 @@ export const MangaSeriesPage: React.FC<MangaSeriesPageProps> = ({
   );
 
   return (
-    <div className="space-y-8 animate-view-enter" data-testid="manga-series-main-page">
+    <div className="space-y-8" data-testid="manga-series-main-page">
       {/* Top Breadcrumb Bar */}
       <nav
         aria-label="Manga Page Breadcrumb"
-        className="studio-panel flex flex-wrap items-center justify-between gap-3 bg-[#0F1523] border border-slate-800 rounded-xl px-4 py-2.5"
+        className="studio-panel flex flex-wrap items-center justify-between gap-3 bg-[#11121A] border border-white/[0.07] rounded-xl px-4 py-2.5"
       >
         <div className="flex flex-wrap items-center gap-2 min-w-0">
           <button
             type="button"
             onClick={onBack}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-200 hover:text-white bg-[#0B0F17] hover:bg-slate-800 border border-slate-800 rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-200 hover:text-white bg-[#090A0F] hover:bg-slate-800 border border-white/[0.07] rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>{backLabel}</span>
@@ -665,7 +666,7 @@ export const MangaSeriesPage: React.FC<MangaSeriesPageProps> = ({
 
           <ChevronRight className="w-3.5 h-3.5 text-slate-600 shrink-0" />
 
-          <span className="text-xs font-medium text-indigo-400 shrink-0">
+          <span className="text-xs font-medium text-violet-400 shrink-0">
             {sourceModule.name}
           </span>
 
@@ -677,7 +678,7 @@ export const MangaSeriesPage: React.FC<MangaSeriesPageProps> = ({
         </div>
 
         {loadingLiveChapters && (
-          <div className="text-xs font-mono text-indigo-400 inline-flex items-center gap-1.5">
+          <div className="text-xs font-mono text-violet-400 inline-flex items-center gap-1.5">
             <RefreshCw className="w-3 h-3 animate-spin" />
             <span>Syncing live chapters...</span>
           </div>
@@ -687,12 +688,12 @@ export const MangaSeriesPage: React.FC<MangaSeriesPageProps> = ({
       {/* Main Manga Series Hero Overview Card */}
       <section
         aria-labelledby="manga-main-page-title"
-        className="studio-panel bg-[#0F1523] border border-slate-800 rounded-xl p-6"
+        className="studio-panel bg-[#11121A] border border-white/[0.07] rounded-xl p-6"
       >
         <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
           {/* Left Column: 3:4 Cover Art & Save to Library Button */}
           <div className="md:col-span-3 lg:col-span-3 max-w-[220px] mx-auto md:max-w-none w-full space-y-3">
-            <div className="aspect-[3/4] w-full rounded-xl overflow-hidden border border-slate-700/80 bg-[#0B0F17]">
+            <div className="aspect-[3/4] w-full rounded-xl overflow-hidden border border-white/[0.1]/80 bg-[#090A0F]">
               <MangaCoverArt series={series} className="w-full h-full" />
             </div>
 
@@ -701,8 +702,8 @@ export const MangaSeriesPage: React.FC<MangaSeriesPageProps> = ({
               onClick={() => onToggleBookmark(series.id)}
               className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-xs font-semibold border transition-colors cursor-pointer ${
                 isBookmarked
-                  ? 'bg-indigo-600/20 border-indigo-500 text-indigo-300'
-                  : 'bg-[#0B0F17] border-slate-800 text-slate-200 hover:border-slate-700 hover:text-white'
+                  ? 'bg-violet-600/20 border-violet-500 text-violet-300'
+                  : 'bg-[#090A0F] border-white/[0.07] text-slate-200 hover:border-white/[0.1] hover:text-white'
               }`}
             >
               <Bookmark className="w-4 h-4" />
@@ -713,7 +714,7 @@ export const MangaSeriesPage: React.FC<MangaSeriesPageProps> = ({
           {/* Right Column: Series Title, Synopsis, Primary CTAs & Source/Format Controls */}
           <div className="md:col-span-9 lg:col-span-9 space-y-4">
             <div className="space-y-1.5">
-              <div className="flex flex-wrap items-center gap-2 text-xs text-indigo-400 font-medium">
+              <div className="flex flex-wrap items-center gap-2 text-xs text-violet-400 font-medium">
                 <Globe className="w-3.5 h-3.5 shrink-0" />
                 <span>{sourceModule.name}</span>
                 <span aria-hidden="true">·</span>
@@ -770,7 +771,7 @@ export const MangaSeriesPage: React.FC<MangaSeriesPageProps> = ({
 
             {/* Active Reading Progress Banner if available */}
             {readingProgress && (
-              <div className="studio-subpanel bg-[#0B0F17] border border-amber-500/40 rounded-xl p-3.5 flex flex-wrap items-center justify-between gap-3">
+              <div className="studio-subpanel bg-[#090A0F] border border-amber-500/40 rounded-xl p-3.5 flex flex-wrap items-center justify-between gap-3">
                 <div className="flex flex-wrap items-center gap-2 text-xs font-mono text-amber-300 tabular-nums">
                   <History className="w-4 h-4 text-amber-400 shrink-0" />
                   <span>
@@ -818,7 +819,7 @@ export const MangaSeriesPage: React.FC<MangaSeriesPageProps> = ({
                   onClick={() =>
                     onReadChapter(seriesWithLiveChapters, firstChapter, selectedReadingMode)
                   }
-                  className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-lg transition-colors whitespace-nowrap shrink-0 tabular-nums cursor-pointer"
+                  className="flex items-center gap-2 px-4 py-2.5 bg-violet-600 hover:bg-violet-500 text-white text-xs font-semibold rounded-lg transition-colors whitespace-nowrap shrink-0 tabular-nums cursor-pointer"
                 >
                   <BookOpen className="w-4 h-4" />
                   <span>Start Reading Ch. {firstChapter.number}</span>
@@ -831,7 +832,7 @@ export const MangaSeriesPage: React.FC<MangaSeriesPageProps> = ({
                   onClick={() =>
                     onReadChapter(seriesWithLiveChapters, latestChapter, selectedReadingMode)
                   }
-                  className="flex items-center gap-2 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-100 text-xs font-medium rounded-lg border border-slate-700 transition-colors whitespace-nowrap shrink-0 tabular-nums cursor-pointer"
+                  className="flex items-center gap-2 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-100 text-xs font-medium rounded-lg border border-white/[0.1] transition-colors whitespace-nowrap shrink-0 tabular-nums cursor-pointer"
                 >
                   <BookOpen className="w-4 h-4" />
                   <span>Read Latest (Ch. {latestChapter.number})</span>
@@ -855,7 +856,7 @@ export const MangaSeriesPage: React.FC<MangaSeriesPageProps> = ({
                 className={`flex items-center gap-2.5 px-3.5 py-2 disabled:opacity-40 text-xs font-semibold rounded-lg border transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
                   isDownloadAllMissingActive
                     ? 'bg-emerald-600/20 text-emerald-200 border-emerald-500/70'
-                    : 'bg-[#0B0F17] hover:bg-slate-800 text-slate-200 border-slate-800'
+                    : 'bg-[#090A0F] hover:bg-slate-800 text-slate-200 border-white/[0.07]'
                 }`}
               >
                 <span
@@ -916,7 +917,7 @@ export const MangaSeriesPage: React.FC<MangaSeriesPageProps> = ({
             )}
 
             {/* Sleek Custom Dropdown Menu UI for Source Mirror, Download Format & Reader Mode */}
-            <div className="pt-3 grid grid-cols-1 sm:grid-cols-3 gap-3 border-t border-slate-800/80">
+            <div className="pt-3 grid grid-cols-1 sm:grid-cols-3 gap-3 border-t border-white/[0.06]">
               <DropdownMenu<SourceId>
                 id="series-source-mirror-select"
                 label="Source"
@@ -944,20 +945,14 @@ export const MangaSeriesPage: React.FC<MangaSeriesPageProps> = ({
                 label="Format"
                 ariaLabel="Download Format"
                 value={archiveFormat}
-                options={(['CBZ', 'PDF', 'EPUB', 'ZIP', 'FOLDER'] as ArchiveFormat[]).map(
+                options={(['CBZ', 'ZIP'] as ArchiveFormat[]).map(
                   (fmt) => ({
                     value: fmt,
                     label: `${fmt} Archive`,
-                    description:
-                      fmt === 'CBZ'
-                        ? 'Comic Book ZIP + ComicInfo.xml'
-                        : fmt === 'PDF'
-                        ? 'Portable Document Format'
-                        : fmt === 'EPUB'
-                        ? 'Reflowable E-Book container'
-                        : fmt === 'ZIP'
-                        ? 'Standard ZIP archive'
-                        : 'Extracted folder layout',
+                      description:
+                        fmt === 'CBZ'
+                          ? 'Comic Book ZIP with ComicInfo.xml'
+                          : 'Standard ZIP containing chapter images',
                   })
                 )}
                 menuWidthClass="w-64"
@@ -989,12 +984,12 @@ export const MangaSeriesPage: React.FC<MangaSeriesPageProps> = ({
       <section
         aria-label="Visual Chapter Progression Map"
         data-testid="chapter-progression-map"
-        className="studio-panel bg-[#0F1523] border border-slate-800 rounded-xl p-5 space-y-4"
+        className="studio-panel bg-[#11121A] border border-white/[0.07] rounded-xl p-5 space-y-4"
       >
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <h2 className="text-base font-bold text-white font-display flex items-center gap-2">
-              <LayoutGrid className="w-4 h-4 text-indigo-400 shrink-0" />
+              <LayoutGrid className="w-4 h-4 text-violet-400 shrink-0" />
               <span>Chapter Progression Map</span>
               <span className="text-xs font-mono font-normal text-slate-400 tabular-nums">
                 ({progressionMap.totalChapters} chapters)
@@ -1020,7 +1015,7 @@ export const MangaSeriesPage: React.FC<MangaSeriesPageProps> = ({
               className={`inline-flex items-center gap-2 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all whitespace-nowrap shrink-0 tabular-nums cursor-pointer ${
                 isDownloadAllMissingActive
                   ? 'bg-emerald-600/20 border-emerald-500 text-emerald-200 shadow-sm'
-                  : 'bg-[#0B0F17] hover:bg-slate-800/90 border-slate-700 text-slate-200 hover:border-teal-500/60'
+                  : 'bg-[#090A0F] hover:bg-slate-800/90 border-white/[0.1] text-slate-200 hover:border-teal-500/60'
               }`}
             >
               <span
@@ -1053,13 +1048,13 @@ export const MangaSeriesPage: React.FC<MangaSeriesPageProps> = ({
               onClick={() =>
                 setMapActionMode((prev) => (prev === 'read' ? 'select' : 'read'))
               }
-              className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium bg-[#0B0F17] border border-slate-800 rounded-lg text-slate-200 hover:text-white cursor-pointer"
+              className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium bg-[#090A0F] border border-white/[0.07] rounded-lg text-slate-200 hover:text-white cursor-pointer"
             >
               <span>{mapActionMode === 'select' ? 'Click: Select' : 'Click: Read'}</span>
               <span
                 aria-hidden="true"
                 className={`relative inline-flex h-4 w-7 shrink-0 items-center rounded-full transition-colors ${
-                  mapActionMode === 'select' ? 'bg-indigo-600' : 'bg-slate-700'
+                  mapActionMode === 'select' ? 'bg-violet-600' : 'bg-slate-700'
                 }`}
               >
                 <span
@@ -1073,7 +1068,7 @@ export const MangaSeriesPage: React.FC<MangaSeriesPageProps> = ({
         </div>
 
         {/* Multi-Segment Progression Bar & Status Filter Dropdown */}
-        <div className="studio-subpanel bg-[#0B0F17] border border-slate-800/90 rounded-xl p-4 space-y-3">
+        <div className="studio-subpanel bg-[#090A0F] border border-white/[0.07]/90 rounded-xl p-4 space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-3 text-xs font-mono tabular-nums">
             <div className="flex flex-wrap items-center gap-2 text-slate-300">
               <span className="inline-flex items-center gap-1.5">
@@ -1141,7 +1136,7 @@ export const MangaSeriesPage: React.FC<MangaSeriesPageProps> = ({
 
           {/* Segmented Visual Progress Strip */}
           <div
-            className="w-full h-2 bg-slate-900 rounded-full overflow-hidden flex border border-slate-800/80"
+            className="w-full h-2 bg-slate-900 rounded-full overflow-hidden flex border border-white/[0.06]"
             aria-label="Series library and reading completion bar"
           >
             {progressionMap.items.map((item) => {
@@ -1185,10 +1180,10 @@ export const MangaSeriesPage: React.FC<MangaSeriesPageProps> = ({
                 ? 'bg-amber-950/45 border-amber-500/50 text-amber-200'
                 : item.isDownloaded
                 ? 'bg-emerald-950/55 border-emerald-500/55 text-emerald-200'
-                : 'bg-[#0F1523]/90 border-slate-800 text-slate-400 hover:border-slate-600 hover:text-slate-200';
+                : 'bg-[#11121A]/90 border-white/[0.07] text-slate-400 hover:border-slate-600 hover:text-slate-200';
 
               const selectedRing = item.isSelected
-                ? 'ring-2 ring-indigo-500 border-indigo-400'
+                ? 'ring-2 ring-violet-500 border-violet-400'
                 : '';
 
               return (
@@ -1250,7 +1245,7 @@ export const MangaSeriesPage: React.FC<MangaSeriesPageProps> = ({
           </div>
 
           {hoveredMapItem && (
-            <div className="pt-2 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-2 text-xs font-mono">
+            <div className="pt-2 border-t border-white/[0.06] flex flex-wrap items-center justify-between gap-2 text-xs font-mono">
               <div className="flex flex-wrap items-center gap-2 text-slate-300 min-w-0">
                 <span className="text-white font-bold tabular-nums">
                   Ch. {String(hoveredMapItem.chapterNumber).padStart(3, '0')}
@@ -1285,7 +1280,7 @@ export const MangaSeriesPage: React.FC<MangaSeriesPageProps> = ({
                         : 1
                     )
                   }
-                  className="px-2.5 py-1 text-[11px] font-semibold bg-indigo-600 hover:bg-indigo-500 text-white rounded transition-colors whitespace-nowrap shrink-0 tabular-nums cursor-pointer"
+                  className="px-2.5 py-1 text-[11px] font-semibold bg-violet-600 hover:bg-violet-500 text-white rounded transition-colors whitespace-nowrap shrink-0 tabular-nums cursor-pointer"
                 >
                   Read Ch. {hoveredMapItem.chapterNumber}
                 </button>
@@ -1298,11 +1293,11 @@ export const MangaSeriesPage: React.FC<MangaSeriesPageProps> = ({
       {/* Chapter List & Batch Selection */}
       <section
         aria-label="Series Chapter List and Batch Downloader"
-        className="studio-panel bg-[#0F1523] border border-slate-800 rounded-xl p-5 space-y-4"
+        className="studio-panel bg-[#11121A] border border-white/[0.07] rounded-xl p-5 space-y-4"
       >
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            <ListChecks className="w-5 h-5 text-indigo-400" />
+            <ListChecks className="w-5 h-5 text-violet-400" />
             <h2 className="text-base sm:text-lg font-bold text-white font-display">
               Chapters ({filteredChapters.length})
             </h2>
@@ -1317,7 +1312,7 @@ export const MangaSeriesPage: React.FC<MangaSeriesPageProps> = ({
                 value={chapterQuery}
                 onChange={(e) => setChapterQuery(e.target.value)}
                 placeholder="Search chapter..."
-                className="w-44 sm:w-52 pl-8 pr-3 py-1.5 text-xs studio-subpanel bg-[#0B0F17] border border-slate-800 rounded-lg text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-indigo-500"
+                className="w-44 sm:w-52 pl-8 pr-3 py-1.5 text-xs studio-subpanel bg-[#090A0F] border border-white/[0.07] rounded-lg text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-violet-500"
               />
             </div>
 
@@ -1342,7 +1337,7 @@ export const MangaSeriesPage: React.FC<MangaSeriesPageProps> = ({
 
         {/* Sleek Batch Selection Bar with Quick-Select Custom Dropdown UI */}
         <div
-          className="studio-subpanel bg-[#0B0F17] border border-slate-800 rounded-xl px-4 py-2.5 flex flex-wrap items-center justify-between gap-3"
+          className="studio-subpanel bg-[#090A0F] border border-white/[0.07] rounded-xl px-4 py-2.5 flex flex-wrap items-center justify-between gap-3"
           aria-label="Bulk chapter selection tool"
         >
           <div className="flex flex-wrap items-center gap-2.5">
@@ -1403,7 +1398,7 @@ export const MangaSeriesPage: React.FC<MangaSeriesPageProps> = ({
                   setSelectedChapterIds(new Set());
                   setSelectionModeNote('Cleared chapter selection');
                 }}
-                className="px-2.5 py-1.5 text-xs font-medium text-slate-400 hover:text-rose-300 bg-slate-900/60 hover:bg-rose-950/30 rounded-lg border border-slate-800 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+                className="px-2.5 py-1.5 text-xs font-medium text-slate-400 hover:text-rose-300 bg-slate-900/60 hover:bg-rose-950/30 rounded-lg border border-white/[0.07] transition-colors whitespace-nowrap shrink-0 cursor-pointer"
               >
                 Clear ({selectedChapterIds.size})
               </button>
@@ -1432,10 +1427,10 @@ export const MangaSeriesPage: React.FC<MangaSeriesPageProps> = ({
         </div>
 
         {/* Chapter List Table */}
-        <div className="border border-slate-800 rounded-xl overflow-hidden bg-[#0B0F17]">
+        <div className="border border-white/[0.07] rounded-xl overflow-hidden bg-[#090A0F]">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="border-b border-slate-800 text-[11px] font-mono text-slate-400 bg-slate-900/50">
+              <tr className="border-b border-white/[0.07] text-[11px] font-mono text-slate-400 bg-slate-900/50">
                 <th className="py-3 px-4 w-10">SEL</th>
                 <th className="py-2.5 px-4 w-40">
                   <button
@@ -1446,13 +1441,13 @@ export const MangaSeriesPage: React.FC<MangaSeriesPageProps> = ({
                         ? 'Sort chapters descending (latest chapter first)'
                         : 'Sort chapters ascending (1st chapter first)'
                     }
-                    className="inline-flex items-center gap-1.5 text-slate-200 hover:text-indigo-300 font-semibold transition-colors cursor-pointer"
+                    className="inline-flex items-center gap-1.5 text-slate-200 hover:text-violet-300 font-semibold transition-colors cursor-pointer"
                   >
                     <span>CHAPTER</span>
                     {sortAsc ? (
-                      <ArrowUp className="w-3 h-3 text-indigo-400" />
+                      <ArrowUp className="w-3 h-3 text-violet-400" />
                     ) : (
-                      <ArrowDown className="w-3 h-3 text-indigo-400" />
+                      <ArrowDown className="w-3 h-3 text-violet-400" />
                     )}
                   </button>
                 </th>
@@ -1468,9 +1463,9 @@ export const MangaSeriesPage: React.FC<MangaSeriesPageProps> = ({
                   >
                     <span>RELEASED</span>
                     {sortAsc ? (
-                      <ArrowUp className="w-3 h-3 text-indigo-400" />
+                      <ArrowUp className="w-3 h-3 text-violet-400" />
                     ) : (
-                      <ArrowDown className="w-3 h-3 text-indigo-400" />
+                      <ArrowDown className="w-3 h-3 text-violet-400" />
                     )}
                   </button>
                 </th>
@@ -1500,7 +1495,7 @@ export const MangaSeriesPage: React.FC<MangaSeriesPageProps> = ({
                       isLastRead
                         ? 'bg-amber-950/20 hover:bg-amber-950/30'
                         : isChecked
-                        ? 'bg-indigo-950/20 hover:bg-indigo-950/30'
+                        ? 'bg-violet-950/20 hover:bg-violet-950/30'
                         : 'hover:bg-slate-900/60'
                     }`}
                   >
@@ -1509,10 +1504,10 @@ export const MangaSeriesPage: React.FC<MangaSeriesPageProps> = ({
                         type="button"
                         onClick={(e) => toggleChapter(ch.id, e.shiftKey)}
                         aria-label={`Select Chapter ${ch.number}`}
-                        className="text-slate-400 hover:text-indigo-400 cursor-pointer"
+                        className="text-slate-400 hover:text-violet-400 cursor-pointer"
                       >
                         {isChecked ? (
-                          <CheckSquare className="w-4 h-4 text-indigo-400" />
+                          <CheckSquare className="w-4 h-4 text-violet-400" />
                         ) : (
                           <Square className="w-4 h-4" />
                         )}
@@ -1530,7 +1525,7 @@ export const MangaSeriesPage: React.FC<MangaSeriesPageProps> = ({
                             isLastRead && readingProgress ? readingProgress.lastPage : 1
                           )
                         }
-                        className="flex items-center gap-1.5 text-left hover:text-indigo-400 transition-colors cursor-pointer"
+                        className="flex items-center gap-1.5 text-left hover:text-violet-400 transition-colors cursor-pointer"
                       >
                         <span
                           title={
@@ -1551,7 +1546,7 @@ export const MangaSeriesPage: React.FC<MangaSeriesPageProps> = ({
                         />
                         <span>Ch. {String(ch.number).padStart(3, '0')}</span>
                         {isNewChapter && (
-                          <span className="text-[10px] font-mono font-bold text-indigo-400">
+                          <span className="text-[10px] font-mono font-bold text-violet-400">
                             NEW
                           </span>
                         )}
@@ -1579,7 +1574,7 @@ export const MangaSeriesPage: React.FC<MangaSeriesPageProps> = ({
                               isLastRead && readingProgress ? readingProgress.lastPage : 1
                             )
                           }
-                          className="text-left hover:text-indigo-400 transition-colors cursor-pointer"
+                          className="text-left hover:text-violet-400 transition-colors cursor-pointer"
                         >
                           {ch.title}
                         </button>
@@ -1621,7 +1616,7 @@ export const MangaSeriesPage: React.FC<MangaSeriesPageProps> = ({
                           className={`px-3 py-1 text-xs font-semibold rounded transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
                             isLastRead
                               ? 'bg-amber-500 text-slate-950 hover:bg-amber-400'
-                              : 'bg-indigo-600/25 text-indigo-200 hover:bg-indigo-600 hover:text-white'
+                              : 'bg-violet-600/25 text-violet-200 hover:bg-violet-600 hover:text-white'
                           }`}
                         >
                           {isLastRead ? `Resume Ch. ${ch.number}` : `Read Ch. ${ch.number}`}
@@ -1651,7 +1646,7 @@ export const MangaSeriesPage: React.FC<MangaSeriesPageProps> = ({
                             className={`flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded border transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
                               isSavedReadLater
                                 ? 'bg-amber-500/20 text-amber-200 border-amber-500/60'
-                                : 'bg-[#0B0F17] text-slate-300 hover:text-white border-slate-800 hover:border-amber-500/40'
+                                : 'bg-[#090A0F] text-slate-300 hover:text-white border-white/[0.07] hover:border-amber-500/40'
                             }`}
                           >
                             <Clock className="w-3 h-3 text-amber-400" />
@@ -1679,7 +1674,7 @@ export const MangaSeriesPage: React.FC<MangaSeriesPageProps> = ({
             </tbody>
           </table>
           {filteredChapters.length > visibleChapterLimit && (
-            <div className="p-3.5 border-t border-slate-800 bg-slate-900/40 flex flex-wrap items-center justify-between gap-3 text-xs">
+            <div className="p-3.5 border-t border-white/[0.07] bg-slate-900/40 flex flex-wrap items-center justify-between gap-3 text-xs">
               <span className="font-mono text-slate-400 tabular-nums">
                 Showing {Math.min(visibleChapterLimit, filteredChapters.length)} of{' '}
                 {filteredChapters.length} chapters (all {filteredChapters.length} chapters remain selectable for batch download)
@@ -1688,14 +1683,14 @@ export const MangaSeriesPage: React.FC<MangaSeriesPageProps> = ({
                 <button
                   type="button"
                   onClick={() => setVisibleChapterLimit((prev) => prev + 120)}
-                  className="px-3 py-1.5 font-semibold bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition-colors cursor-pointer"
+                  className="px-3 py-1.5 font-semibold bg-violet-600 hover:bg-violet-500 text-white rounded-lg transition-colors cursor-pointer"
                 >
                   Load Next 120 Chapters
                 </button>
                 <button
                   type="button"
                   onClick={() => setVisibleChapterLimit(filteredChapters.length)}
-                  className="px-3 py-1.5 font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg transition-colors cursor-pointer"
+                  className="px-3 py-1.5 font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 border border-white/[0.1] rounded-lg transition-colors cursor-pointer"
                 >
                   Show All ({filteredChapters.length})
                 </button>
@@ -1709,7 +1704,7 @@ export const MangaSeriesPage: React.FC<MangaSeriesPageProps> = ({
       {relatedSeries.length > 0 && onSelectSeries && (
         <section
           aria-label="More Series Like This"
-          className="bg-[#0F1523] border border-slate-800 rounded-xl p-6 space-y-4"
+          className="bg-[#11121A] border border-white/[0.07] rounded-xl p-6 space-y-4"
         >
           <div className="flex items-center justify-between">
             <h2 className="text-base font-bold text-white font-display">
@@ -1718,7 +1713,7 @@ export const MangaSeriesPage: React.FC<MangaSeriesPageProps> = ({
             <button
               type="button"
               onClick={onBack}
-              className="text-xs font-mono text-indigo-400 hover:text-indigo-300 cursor-pointer"
+              className="text-xs font-mono text-violet-400 hover:text-violet-300 cursor-pointer"
             >
               View All Titles →
             </button>
@@ -1741,9 +1736,9 @@ export const MangaSeriesPage: React.FC<MangaSeriesPageProps> = ({
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }
                 }}
-                className="bg-[#0B0F17] border border-slate-800 hover:border-indigo-500/60 rounded-xl p-3 flex items-center gap-3 cursor-pointer transition-colors"
+                className="bg-[#090A0F] border border-white/[0.07] hover:border-violet-500/60 rounded-xl p-3 flex items-center gap-3 cursor-pointer transition-colors"
               >
-                <div className="w-14 aspect-[3/4] rounded-lg overflow-hidden border border-slate-800 shrink-0">
+                <div className="w-14 aspect-[3/4] rounded-lg overflow-hidden border border-white/[0.07] shrink-0">
                   <MangaCoverArt series={rel} className="w-full h-full" />
                 </div>
                 <div className="min-w-0 flex-1 space-y-1">
@@ -1753,7 +1748,7 @@ export const MangaSeriesPage: React.FC<MangaSeriesPageProps> = ({
                   <div className="text-xs text-slate-400 truncate">
                     {rel.author} · {rel.status}
                   </div>
-                  <div className="text-[11px] font-mono text-indigo-400 tabular-nums flex items-center gap-1">
+                  <div className="text-[11px] font-mono text-violet-400 tabular-nums flex items-center gap-1">
                     <span>{rel.totalChapters} Chapters</span>
                     <span aria-hidden="true">·</span>
                     <Star className="w-3 h-3 text-amber-400 fill-amber-400 shrink-0" />

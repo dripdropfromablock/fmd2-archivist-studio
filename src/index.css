@@ -1,5 +1,16 @@
 @import "tailwindcss";
 
+@keyframes manga-skeleton-shimmer {
+  from { background-position: 120% 0; }
+  to { background-position: -120% 0; }
+}
+
+.skeleton-shimmer {
+  background-image: linear-gradient(100deg, #12141D 28%, #202230 45%, #12141D 62%);
+  background-size: 220% 100%;
+  animation: manga-skeleton-shimmer 1.45s linear infinite;
+}
+
 @layer base {
   :root,
   [data-theme="obsidian"] {
@@ -414,22 +425,22 @@
 @keyframes viewEnter {
   0% {
     opacity: 0;
-    transform: translateY(10px) scale(0.996);
+    transform: translate3d(0, 14px, 0) scale(0.994);
   }
   100% {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translate3d(0, 0, 0) scale(1);
   }
 }
 
 @keyframes cardReveal {
   0% {
     opacity: 0;
-    transform: translateY(14px) scale(0.988);
+    transform: translate3d(0, 12px, 0) scale(0.99);
   }
   100% {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translate3d(0, 0, 0) scale(1);
   }
 }
 
@@ -500,12 +511,52 @@
 }
 
 .animate-view-enter {
-  animation: viewEnter 0.24s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: viewEnter 0.28s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
 .animate-card-enter {
-  animation: cardReveal 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
-  animation-delay: min(calc(var(--stagger-idx, 0) * 18ms), 180ms);
+  animation: cardReveal 0.26s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation-delay: min(calc(var(--stagger-idx, 0) * 12ms), 132ms);
+}
+
+.studio-nav-tab {
+  position: relative;
+}
+
+.studio-nav-tab::after {
+  position: absolute;
+  right: 0;
+  bottom: -1px;
+  left: 0;
+  height: 2px;
+  border-radius: 999px;
+  background: var(--theme-accent);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--theme-accent) 44%, transparent);
+  content: "";
+  opacity: 0;
+  transform: scaleX(0.35);
+  transition:
+    transform 0.24s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.16s ease;
+}
+
+.studio-nav-tab[aria-current="page"]::after {
+  opacity: 1;
+  transform: scaleX(1);
+}
+
+.queue-card-interactive {
+  transition:
+    transform 0.2s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.18s ease,
+    box-shadow 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+[data-hover="enabled"] .queue-card-interactive:hover,
+[data-hover="enabled"] .queue-card-interactive:focus-within {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--theme-accent) 48%, var(--theme-border));
+  box-shadow: 0 10px 24px -14px rgba(0, 0, 0, 0.7);
 }
 
 .animate-modal-backdrop {
@@ -700,10 +751,15 @@ button.btn-pressed-anim:not(:disabled) {
   animation-duration: 0.12s !important;
 }
 
+[data-motion="snappy"] .animate-card-enter {
+  animation-delay: min(calc(var(--stagger-idx, 0) * 6ms), 60ms);
+}
+
 [data-motion="minimal"] *,
 [data-motion="minimal"] *::before,
 [data-motion="minimal"] *::after {
   animation-duration: 0.001ms !important;
+  animation-delay: 0ms !important;
   transition-duration: 0.001ms !important;
 }
 
@@ -712,6 +768,7 @@ button.btn-pressed-anim:not(:disabled) {
   *::before,
   *::after {
     animation-duration: 0.001ms !important;
+    animation-delay: 0ms !important;
     transition-duration: 0.001ms !important;
   }
 }

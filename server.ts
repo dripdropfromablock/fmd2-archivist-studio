@@ -6,21 +6,23 @@ import { createServer as createViteServer } from 'vite';
 import { GoogleGenAI, ThinkingLevel, Type } from '@google/genai';
 import { fmdEngine } from './src/server/fmdEngine.ts';
 import {
-  browseLiveFmdSources,
+  fetchPublicImage,
+  MAX_PROXY_IMAGE_BYTES,
+  verifyImageProxyRequest,
+} from './src/server/imageProxySecurity.ts';
+import {
   searchAllLiveFmdSources,
   resolveLiveChaptersForSeries,
   resolveLiveChapterPages,
   verifyFmd2Connectors,
 } from './src/server/fmdLiveScraper.ts';
+import { createBrowseApiHandler } from './src/server/browseApi.ts';
 import {
   DEFAULT_ENABLED_SOURCE_IDS,
+  isArchiveFormat,
   type ArchiveFormat,
   type MangaChapter,
   type SourceId,
-  type BrowseSortOption,
-  type BrowseStatusFilter,
-  type BrowseFormatFilter,
-  type BrowseDemographicFilter,
   type ReadingSessionProgress,
 } from './src/utils/fmdLogic.ts';
 import {
@@ -40,13 +42,7 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
-
-process.on('unhandledRejection', () => {
-  // Prevent transient upstream scraper timeouts from terminating the dev server
-});
-process.on('uncaughtException', (err) => {
-  console.error('Uncaught server exception:', err?.message || err);
-});
+const HOST = process.env.HOST || (process.env.NODE_ENV === 'production' ? '0.0.0.0' : '127.0.0.1');
 
 app.use(express.json({ limit: '5mb' }));
 
@@ -85,37 +81,69 @@ app.get('/api/engine/verify-connectors', async (_req, res) => {
 });
 
 app.post('/api/engine/enqueue-chapters', (req, res) => {
-  const { seriesId, seriesTitle, chapters, sourceId, format, completeImmediately } = req.body as {
+  const { seriesId, seriesTitle, chapters, sourceId, format } = req.body as {
     seriesId?: string;
     seriesTitle?: string;
     chapters?: MangaChapter[];
     sourceId?: SourceId;
     format?: ArchiveFormat;
-    completeImmediately?: boolean;
   };
 
-  if (!seriesId || !seriesTitle || !Array.isArray(chapters) || chapters.length === 0) {
-    res.status(400).json({ error: 'Missing series or chapters to enqueue.' });
+  const selectedSource = sourceId || 'weebcentral';
+  const selectedFormat = format || 'CBZ';
+  if (
+    !seriesId ||
+    !seriesTitle ||
+    !Array.isArray(chapters) ||
+    chapters.length === 0 ||
+    chapters.length > 500 ||
+    !chapters.every(
+      (chapter) =>
+        chapter &&
+        typeof chapter.id === 'string' &&
+        typeof chapter.title === 'string' &&
+        Number.isFinite(chapter.number) &&
+        Number.isFinite(chapter.pagesCount) &&
+        (chapter.externalId === undefined || typeof chapter.externalId === 'string')
+    )
+  ) {
+    res.status(400).json({ error: 'Provide a valid series and between 1 and 500 chapters.' });
+    return;
+  }
+  if (!DEFAULT_ENABLED_SOURCE_IDS.includes(selectedSource)) {
+    res.status(400).json({ error: `Live downloads are not implemented for ${selectedSource}.` });
+    return;
+  }
+  if (!isArchiveFormat(selectedFormat)) {
+    res.status(400).json({ error: 'Supported archive formats are CBZ and ZIP.' });
     return;
   }
 
-  const added = fmdEngine.enqueueChapters(
-    { id: seriesId, title: seriesTitle },
-    chapters,
-    sourceId || 'weebcentral',
-    format || 'CBZ',
-    completeImmediately !== false
-  );
-  res.json({
-    addedCount: added.length,
-    addedTasks: added,
-    ...fmdEngine.getState(),
-  });
+  try {
+    const added = fmdEngine.enqueueChapters(
+      { id: seriesId, title: seriesTitle },
+      chapters,
+      selectedSource,
+      selectedFormat
+    );
+    res.json({
+      addedCount: added.length,
+      addedTasks: added,
+      ...fmdEngine.getState(),
+    });
+  } catch (error) {
+    res.status(400).json({ error: error instanceof Error ? error.message : 'Unable to enqueue.' });
+  }
 });
 
 app.post('/api/engine/enqueue-url', async (req, res) => {
   const { url, format } = req.body as { url?: string; format?: ArchiveFormat };
-  const result = await fmdEngine.enqueueDirectUrlAsync(url || '', format || 'CBZ');
+  const selectedFormat = format || 'CBZ';
+  if (!isArchiveFormat(selectedFormat)) {
+    res.status(400).json({ ok: false, message: 'Supported archive formats are CBZ and ZIP.' });
+    return;
+  }
+  const result = await fmdEngine.enqueueDirectUrlAsync(url || '', selectedFormat);
   if (!result.ok) {
     res.status(400).json({
       ok: false,
@@ -164,16 +192,22 @@ app.post('/api/engine/config', (req, res) => {
 });
 
 app.get('/api/engine/download/:taskId', async (req, res) => {
-  const archive = await fmdEngine.getArchiveForDownloadAsync(req.params.taskId);
-  if (!archive) {
-    res.status(404).json({ error: 'Archive task not found in FMD2 Engine.' });
-    return;
+  try {
+    const archive = await fmdEngine.getArchiveForDownloadAsync(req.params.taskId);
+    if (!archive) {
+      res.status(404).json({ error: 'Archive task not found in FMD2 Engine.' });
+      return;
+    }
+    res.setHeader('Content-Type', archive.mimeType);
+    res.setHeader('Content-Disposition', `attachment; filename="${archive.fileName}"`);
+    res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
+    res.setHeader('Content-Length', String(archive.buffer.length));
+    res.send(archive.buffer);
+  } catch (error) {
+    res.status(409).json({
+      error: error instanceof Error ? error.message : 'The archive is not ready to download.',
+    });
   }
-  res.setHeader('Content-Type', archive.mimeType);
-  res.setHeader('Content-Disposition', `attachment; filename="${archive.fileName}"`);
-  res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
-  res.setHeader('Content-Length', String(archive.buffer.length));
-  res.send(archive.buffer);
 });
 
 // ============================================================================
@@ -289,48 +323,7 @@ app.post('/api/sync/reading-history/clear', handleDeleteCloudSync);
 // LIVE MULTI-SOURCE FMD2 SCRAPER BROWSE, SEARCH, CHAPTERS & PAGES ROUTES
 // ============================================================================
 
-app.get('/api/manga/browse', async (req, res) => {
-  const sourceId = String(req.query.sourceId || 'ALL') as SourceId | 'ALL';
-  const query = String(req.query.q || '').trim();
-  const sortBy = String(req.query.sortBy || 'popular') as BrowseSortOption;
-  const status = String(req.query.status || 'All') as BrowseStatusFilter;
-  const format = String(req.query.format || 'All') as BrowseFormatFilter;
-  const demographic = String(req.query.demographic || 'All') as BrowseDemographicFilter;
-  const minChapters = Number(req.query.minChapters) || 0;
-  const page = Math.max(1, Number(req.query.page) || 1);
-  const forceRefresh = req.query.refresh === '1' || req.query.refresh === 'true';
-
-  try {
-    const data = await browseLiveFmdSources({
-      sourceId,
-      query,
-      sortBy,
-      status,
-      format,
-      demographic,
-      minChapters,
-      page,
-      forceRefresh,
-    });
-    res.json({
-      ok: true,
-      sourceId,
-      page,
-      fetchedAt: new Date().toISOString(),
-      sourcesQueried: data.sourcesQueried,
-      results: data.results,
-    });
-  } catch {
-    res.json({
-      ok: false,
-      sourceId,
-      page,
-      fetchedAt: new Date().toISOString(),
-      sourcesQueried: [],
-      results: [],
-    });
-  }
-});
+app.get('/api/manga/browse', createBrowseApiHandler());
 
 app.get('/api/manga/live-search', async (req, res) => {
   const q = String(req.query.q || '').trim();
@@ -407,65 +400,90 @@ app.get('/api/manga/chapter-pages', async (req, res) => {
   }
 });
 
+const IMAGE_CACHE_MAX_BYTES = 48 * 1024 * 1024;
+let imageRamCacheBytes = 0;
 const imageRamCache = new Map<string, { contentType: string; buffer: Buffer; expires: number }>();
 const inFlightImages = new Map<string, Promise<{ contentType: string; buffer: Buffer } | null>>();
 
 function storeImageInRam(key: string, contentType: string, buffer: Buffer) {
-  if (buffer.length > 2_500_000) return; // Skip caching abnormally huge single images >2.5MB
-  if (imageRamCache.size >= 180) {
-    const oldestKey = imageRamCache.keys().next().value;
-    if (oldestKey) imageRamCache.delete(oldestKey);
+  const existing = imageRamCache.get(key);
+  if (existing) {
+    imageRamCacheBytes -= existing.buffer.length;
+    imageRamCache.delete(key);
   }
+
+  for (const [cachedKey, cached] of imageRamCache) {
+    if (cached.expires <= Date.now()) {
+      imageRamCache.delete(cachedKey);
+      imageRamCacheBytes -= cached.buffer.length;
+    }
+  }
+  if (buffer.length > IMAGE_CACHE_MAX_BYTES) return;
+  while (imageRamCacheBytes + buffer.length > IMAGE_CACHE_MAX_BYTES) {
+    const oldest = imageRamCache.entries().next().value as
+      | [string, { contentType: string; buffer: Buffer; expires: number }]
+      | undefined;
+    if (!oldest) break;
+    imageRamCache.delete(oldest[0]);
+    imageRamCacheBytes -= oldest[1].buffer.length;
+  }
+
   imageRamCache.set(key, {
     contentType,
     buffer,
     expires: Date.now() + 30 * 60 * 1000,
   });
+  imageRamCacheBytes += buffer.length;
+}
+
+function getCachedImage(key: string) {
+  const cached = imageRamCache.get(key);
+  if (!cached) return null;
+  if (cached.expires <= Date.now()) {
+    imageRamCache.delete(key);
+    imageRamCacheBytes -= cached.buffer.length;
+    return null;
+  }
+  return cached;
 }
 
 app.get('/api/proxy/image', async (req, res) => {
   const rawUrl = String(req.query.url || '').trim();
   const referer = String(req.query.referer || 'https://weebcentral.com/').trim();
+  const expiresAt = Number(req.query.expires);
+  const signature = String(req.query.signature || '');
 
-  if (!rawUrl || !/^https?:\/\//i.test(rawUrl)) {
-    res.status(400).end();
+  if (!verifyImageProxyRequest(rawUrl, referer, expiresAt, signature)) {
+    res.status(403).json({ error: 'Invalid or expired image proxy signature.' });
     return;
   }
 
-  const cached = imageRamCache.get(rawUrl);
-  if (cached && cached.expires > Date.now()) {
+  const cacheKey = `${rawUrl}\n${referer}`;
+  const cached = getCachedImage(cacheKey);
+  if (cached) {
     res.setHeader('Content-Type', cached.contentType);
-    res.setHeader('Cache-Control', 'public, max-age=604800, immutable');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
     res.send(cached.buffer);
     return;
   }
 
   try {
-    let inflight = inFlightImages.get(rawUrl);
+    let inflight = inFlightImages.get(cacheKey);
     if (!inflight) {
       inflight = (async () => {
         try {
-          const upstream = await fetch(rawUrl, {
-            headers: {
-              Referer: referer,
-              'User-Agent':
-                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
-            },
-            signal: AbortSignal.timeout(5000),
+          const image = await fetchPublicImage(rawUrl, referer, {
+            maxBytes: MAX_PROXY_IMAGE_BYTES,
           });
-          if (!upstream.ok) return null;
-          const contentType = upstream.headers.get('content-type') || 'image/jpeg';
-          const arrayBuffer = await upstream.arrayBuffer();
-          const buffer = Buffer.from(arrayBuffer);
-          storeImageInRam(rawUrl, contentType, buffer);
-          return { contentType, buffer };
+          storeImageInRam(cacheKey, image.contentType, image.buffer);
+          return image;
         } catch {
           return null;
         } finally {
-          inFlightImages.delete(rawUrl);
+          inFlightImages.delete(cacheKey);
         }
       })();
-      inFlightImages.set(rawUrl, inflight);
+      inFlightImages.set(cacheKey, inflight);
     }
 
     const result = await inflight;
@@ -474,45 +492,42 @@ app.get('/api/proxy/image', async (req, res) => {
       return;
     }
     res.setHeader('Content-Type', result.contentType);
-    res.setHeader('Cache-Control', 'public, max-age=604800, immutable');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
     res.send(result.buffer);
   } catch {
-    res.status(404).end();
+    res.status(502).end();
   }
 });
 
 app.get('/api/proxy/cover', async (req, res) => {
   const { mangaId, fileName } = req.query as { mangaId?: string; fileName?: string };
-  if (!mangaId || !fileName) {
-    res.status(404).end();
+  if (
+    !mangaId ||
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(mangaId) ||
+    !fileName ||
+    !/^[a-z0-9._-]{1,128}$/i.test(fileName)
+  ) {
+    res.status(400).end();
     return;
   }
   const target = `https://uploads.mangadex.org/covers/${mangaId}/${fileName}.256.jpg`;
-  const cached = imageRamCache.get(target);
-  if (cached && cached.expires > Date.now()) {
+  const cached = getCachedImage(target);
+  if (cached) {
     res.setHeader('Content-Type', cached.contentType);
-    res.setHeader('Cache-Control', 'public, max-age=604800, immutable');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
     res.send(cached.buffer);
     return;
   }
   try {
-    const upstream = await fetch(target, {
-      headers: { 'User-Agent': 'FMD2-Studio/2.0' },
-      signal: AbortSignal.timeout(4500),
+    const image = await fetchPublicImage(target, 'https://mangadex.org/', {
+      maxBytes: 2 * 1024 * 1024,
     });
-    if (!upstream.ok) {
-      res.status(404).end();
-      return;
-    }
-    const contentType = upstream.headers.get('content-type') || 'image/jpeg';
-    const arrayBuffer = await upstream.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-    storeImageInRam(target, contentType, buffer);
-    res.setHeader('Content-Type', contentType);
-    res.setHeader('Cache-Control', 'public, max-age=604800, immutable');
-    res.send(buffer);
+    storeImageInRam(target, image.contentType, image.buffer);
+    res.setHeader('Content-Type', image.contentType);
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.send(image.buffer);
   } catch {
-    res.status(404).end();
+    res.status(502).end();
   }
 });
 
@@ -760,8 +775,8 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`FMD2 Studio server running at http://localhost:${PORT}`);
+  app.listen(PORT, HOST, () => {
+    console.log(`FMD2 Studio server running at http://${HOST}:${PORT}`);
   });
 }
 
